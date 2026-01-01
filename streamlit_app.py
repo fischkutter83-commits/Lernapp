@@ -24,7 +24,7 @@ def save_users(users):
 
 users = load_users()
 
-# -------------------- Session State --------------------
+# -------------------- Session State Initialisierung --------------------
 if "user" not in st.session_state:
     st.session_state.user = None
 if "index" not in st.session_state:
@@ -36,7 +36,7 @@ if "aufgaben" not in st.session_state:
 if "fertig" not in st.session_state:
     st.session_state.fertig = False
 
-# -------------------- LOGIN --------------------
+# -------------------- LOGIN / REGISTRIERUNG --------------------
 if st.session_state.user is None:
     st.subheader("🔐 Login / Registrierung")
 
@@ -49,6 +49,17 @@ if st.session_state.user is None:
         if st.button("Einloggen"):
             if username in users and users[username]["password"] == password:
                 st.session_state.user = username
+
+                # Session-State Variablen initialisieren
+                if "index" not in st.session_state:
+                    st.session_state.index = 0
+                if "punkte" not in st.session_state:
+                    st.session_state.punkte = 0
+                if "aufgaben" not in st.session_state:
+                    st.session_state.aufgaben = []
+                if "fertig" not in st.session_state:
+                    st.session_state.fertig = False
+
                 st.success(f"Willkommen, {username} 👋")
                 st.experimental_rerun()
             else:
@@ -59,13 +70,11 @@ if st.session_state.user is None:
             if username in users:
                 st.error("❌ Benutzer existiert bereits")
             else:
-                users[username] = {
-                    "password": password
-                }
+                users[username] = {"password": password}
                 save_users(users)
                 st.success("✅ Account erstellt – bitte einloggen")
 
-    st.stop()
+    st.stop()  # Stoppt alles hier, bis der User eingeloggt ist
 
 # -------------------- Mathe-Aufgaben --------------------
 def generiere_mathe_aufgaben(klasse, anzahl):
@@ -102,10 +111,7 @@ def generiere_mathe_aufgaben(klasse, anzahl):
             a, b = random.randint(1, 9), random.randint(1, 9)
             c, d = random.randint(1, 9), random.randint(1, 9)
             f1, f2 = fractions.Fraction(a, b), fractions.Fraction(c, d)
-            aufgaben.append(
-                (f"{a}/{b} + {c}/{d}", str(f1 + f2),
-                 f"{a}/{b} + {c}/{d} = {f1 + f2}")
-            )
+            aufgaben.append((f"{a}/{b} + {c}/{d}", str(f1 + f2), f"{a}/{b} + {c}/{d} = {f1+f2}"))
 
         elif art == "Potenz":
             a, b = random.randint(2, 9), random.randint(2, 4)
@@ -113,7 +119,7 @@ def generiere_mathe_aufgaben(klasse, anzahl):
 
     return aufgaben
 
-# -------------------- Deutsch --------------------
+# -------------------- Deutsch-Aufgaben --------------------
 def generiere_deutsch_aufgaben(klasse, anzahl):
     daten = {
         1: ("Plural", {"Hund": "Hunde", "Katze": "Katzen"}),
@@ -128,7 +134,7 @@ def generiere_deutsch_aufgaben(klasse, anzahl):
         aufgaben.append((f"{thema}: {wort}", lösung, f"Richtig: {lösung}"))
     return aufgaben
 
-# -------------------- Englisch --------------------
+# -------------------- Englisch-Aufgaben --------------------
 def generiere_englisch_aufgaben(klasse, anzahl):
     if klasse <= 2:
         daten = {"rot": "red", "blau": "blue"}
@@ -167,10 +173,10 @@ if st.session_state.aufgaben and not st.session_state.fertig:
     frage, lösung, erklärung = st.session_state.aufgaben[st.session_state.index]
     st.subheader(f"Aufgabe {st.session_state.index + 1}")
     st.write(frage)
-    antwort = st.text_input("Deine Antwort")
+    antwort = st.text_input("Deine Antwort", key=f"antwort_{st.session_state.index}")
 
     if st.button("Antwort prüfen"):
-        if antwort.strip().lower() == str(lösung).strip().lower():
+        if str(antwort).strip().lower() == str(lösung).strip().lower():
             st.success("✅ Richtig")
             st.session_state.punkte += 1
         else:
@@ -186,5 +192,8 @@ if st.session_state.aufgaben and not st.session_state.fertig:
 
 elif st.session_state.fertig:
     st.success(f"🎉 Fertig! Punkte: {st.session_state.punkte}")
-    if st.button("Nochmal"):
+    if st.button("🔁 Nochmal"):
         st.session_state.aufgaben = []
+        st.session_state.index = 0
+        st.session_state.punkte = 0
+        st.session_state.fertig = False
