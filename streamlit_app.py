@@ -2,206 +2,168 @@ import streamlit as st
 import random
 import json
 import os
-from datetime import datetime
+from fractions import Fraction
 
-# ================== GRUNDEINSTELLUNGEN ==================
-st.set_page_config(page_title="🎓 Lern-App", layout="centered")
-
-st.markdown("""
-<style>
-.big-button button {
-    font-size: 22px !important;
-    padding: 15px !important;
-}
-.card {
-    background-color: #f0f8ff;
-    padding: 20px;
-    border-radius: 15px;
-    margin-bottom: 15px;
-}
-</style>
-""", unsafe_allow_html=True)
-
-st.title("📚 Bunte Lern-App")
+# ------------------ CONFIG ------------------
+st.set_page_config(page_title="Lern-App", layout="centered")
+st.markdown("## 🌈 📚 Lern-App für Kinder")
 
 USERS_FILE = "users.json"
-HISTORY_FILE = "history.json"
+PROGRESS_FILE = "progress.json"
 
-# ================== DATEIEN ==================
-def load_json(file, default):
-    if not os.path.exists(file):
-        with open(file, "w") as f:
+# ------------------ FILE HELPERS ------------------
+def load_json(path, default):
+    if not os.path.exists(path):
+        with open(path, "w") as f:
             json.dump(default, f)
-    with open(file, "r") as f:
+    with open(path, "r") as f:
         return json.load(f)
 
-def save_json(file, data):
-    with open(file, "w") as f:
+def save_json(path, data):
+    with open(path, "w") as f:
         json.dump(data, f, indent=4)
 
 users = load_json(USERS_FILE, {})
-history = load_json(HISTORY_FILE, {})
+progress = load_json(PROGRESS_FILE, {})
 
-# ================== SESSION STATE ==================
-defaults = {
-    "user": None,
-    "aufgaben": [],
-    "index": 0,
-    "punkte": 0,
-    "fertig": False,
-    "antworten": [],
-    "quiz_aktiv": False,
-}
-for k, v in defaults.items():
-    if k not in st.session_state:
-        st.session_state[k] = v
+# ------------------ SESSION STATE ------------------
+if "user" not in st.session_state:
+    st.session_state.user = None
+if "mode" not in st.session_state:
+    st.session_state.mode = "lernen"
+if "quiz" not in st.session_state:
+    st.session_state.quiz = []
+if "index" not in st.session_state:
+    st.session_state.index = 0
+if "answer_key" not in st.session_state:
+    st.session_state.answer_key = 0
 
-# ================== LOGIN ==================
+# ------------------ LOGIN ------------------
 if st.session_state.user is None:
     st.subheader("🔐 Login / Registrierung")
-    username = st.text_input("👤 Benutzername")
-    password = st.text_input("🔑 Passwort", type="password")
 
-    col1, col2 = st.columns(2)
+    u = st.text_input("Benutzername")
+    p = st.text_input("Passwort", type="password")
 
-    with col1:
+    c1, c2 = st.columns(2)
+
+    with c1:
         if st.button("Einloggen"):
-            if username in users and users[username] == password:
-                st.session_state.user = username
+            if u in users and users[u]["password"] == p:
+                st.session_state.user = u
+                st.success("✅ Eingeloggt")
                 st.rerun()
             else:
                 st.error("❌ Falsch")
 
-    with col2:
+    with c2:
         if st.button("Registrieren"):
-            if username in users:
-                st.error("❌ Benutzer existiert")
+            if u in users:
+                st.error("❌ User existiert")
             else:
-                users[username] = password
+                users[u] = {"password": p}
+                progress[u] = {}
                 save_json(USERS_FILE, users)
+                save_json(PROGRESS_FILE, progress)
                 st.success("✅ Account erstellt")
 
     st.stop()
 
-# ================== AUFGABEN ==================
-def mathe_aufgabe(thema):
-    if thema == "Plus":
-        a, b = random.randint(1, 50), random.randint(1, 50)
-        return f"{a} + {b}", a + b, f"{a} + {b} = {a+b}"
-    if thema == "Minus":
-        a, b = random.randint(20, 50), random.randint(1, 20)
-        return f"{a} - {b}", a - b, f"{a} - {b} = {a-b}"
-    if thema == "Mal":
-        a, b = random.randint(2, 12), random.randint(2, 12)
-        return f"{a} × {b}", a * b, f"{a} × {b} = {a*b}"
+user = st.session_state.user
 
-def deutsch_aufgabe():
-    w = {"Hund": "Hunde", "Katze": "Katzen"}
-    wort, lösung = random.choice(list(w.items()))
-    return f"Plural von {wort}", lösung, f"{wort} → {lösung}"
-
-def englisch_aufgabe():
-    w = {"Hund": "dog", "Katze": "cat"}
-    de, en = random.choice(list(w.items()))
-    return f"Übersetze: {de}", en, f"{de} = {en}"
-
-# ================== SIDEBAR ==================
-st.sidebar.markdown(f"👤 **{st.session_state.user}**")
-
-fach = st.sidebar.radio("📘 Fach", ["Mathe", "Deutsch", "Englisch"])
-
-modus = st.sidebar.radio("🎯 Modus", ["Zufall", "Thema wählen"])
-
-if fach == "Mathe" and modus == "Thema wählen":
-    thema = st.sidebar.selectbox("🧮 Thema", ["Plus", "Minus", "Mal"])
-else:
-    thema = None
-
-anzahl = st.sidebar.slider("📌 Aufgaben", 1, 10, 5)
-
-if st.sidebar.button("🚀 Quiz starten"):
-    st.session_state.aufgaben = []
-    st.session_state.antworten = []
+# ------------------ SIDEBAR ------------------
+st.sidebar.markdown(f"👤 **{user}**")
+if st.sidebar.button("🎮 Lernen"):
+    st.session_state.mode = "lernen"
+if st.sidebar.button("📊 Erledigt / Fortschritt"):
+    st.session_state.mode = "fortschritt"
+if st.sidebar.button("❌ Quiz abbrechen"):
+    st.session_state.quiz = []
     st.session_state.index = 0
-    st.session_state.punkte = 0
-    st.session_state.fertig = False
-    st.session_state.quiz_aktiv = True
 
-    for _ in range(anzahl):
-        if fach == "Mathe":
-            t = thema if thema else random.choice(["Plus", "Minus", "Mal"])
-            st.session_state.aufgaben.append(mathe_aufgabe(t))
-        elif fach == "Deutsch":
-            st.session_state.aufgaben.append(deutsch_aufgabe())
+# ------------------ PROGRESS VIEW ------------------
+if st.session_state.mode == "fortschritt":
+    st.subheader("📊 Dein Fortschritt")
+
+    user_data = progress.get(user, {})
+    if not user_data:
+        st.info("Noch keine Aufgaben gemacht 🙂")
+    else:
+        for fach, themen in user_data.items():
+            st.markdown(f"### 📘 {fach}")
+            for thema, stats in themen.items():
+                st.success(
+                    f"**{thema}** → Aufgaben: {stats['total']} | "
+                    f"✅ {stats['richtig']} | ❌ {stats['falsch']}"
+                )
+    st.stop()
+
+# ------------------ QUIZ GENERATION ------------------
+def add_progress(fach, thema, richtig):
+    progress.setdefault(user, {})
+    progress[user].setdefault(fach, {})
+    progress[user][fach].setdefault(thema, {"total": 0, "richtig": 0, "falsch": 0})
+
+    progress[user][fach][thema]["total"] += 1
+    if richtig:
+        progress[user][fach][thema]["richtig"] += 1
+    else:
+        progress[user][fach][thema]["falsch"] += 1
+
+    save_json(PROGRESS_FILE, progress)
+
+# ------------------ LERNEN ------------------
+st.subheader("🎯 Lernen")
+
+fach = st.selectbox("Fach", ["Mathe", "Deutsch", "Englisch"])
+themen = {
+    "Mathe": ["Zufall", "Plus", "Minus", "Mal", "Geteilt", "Bruch", "Potenz"],
+    "Deutsch": ["Plural", "Wortart", "Synonym"],
+    "Englisch": ["Farben", "Vokabeln", "Verben"]
+}
+thema = st.selectbox("Thema", themen[fach])
+
+if st.button("🧩 Aufgabe starten"):
+    if fach == "Mathe":
+        if thema == "Plus":
+            a, b = random.randint(1, 50), random.randint(1, 50)
+            st.session_state.quiz = [(f"{a} + {b}", a + b, f"{a}+{b}={a+b}")]
+        elif thema == "Bruch":
+            a, b = random.randint(1, 9), random.randint(1, 9)
+            c, d = random.randint(1, 9), random.randint(1, 9)
+            res = Fraction(a, b) + Fraction(c, d)
+            st.session_state.quiz = [(f"{a}/{b} + {c}/{d}", str(res), f"{res}")]
         else:
-            st.session_state.aufgaben.append(englisch_aufgabe())
+            a, b = random.randint(2, 12), random.randint(2, 12)
+            st.session_state.quiz = [(f"{a} × {b}", a * b, f"{a}×{b}={a*b}")]
 
+    elif fach == "Deutsch":
+        st.session_state.quiz = [("Plural von Hund", "Hunde", "Hund → Hunde")]
+
+    else:
+        st.session_state.quiz = [("Übersetze rot", "red", "rot = red")]
+
+    st.session_state.index = 0
+    st.session_state.answer_key += 1
     st.rerun()
 
-if st.sidebar.button("🛑 Abbrechen"):
-    st.session_state.quiz_aktiv = False
-    st.session_state.aufgaben = []
-    st.rerun()
+# ------------------ QUIZ VIEW ------------------
+if st.session_state.quiz:
+    frage, lösung, erklärung = st.session_state.quiz[0]
+    st.markdown(f"### ✏️ {frage}")
 
-# ================== QUIZ ==================
-if st.session_state.quiz_aktiv and not st.session_state.fertig:
-    if st.session_state.index >= len(st.session_state.aufgaben):
-        st.session_state.fertig = True
-        st.rerun()
+    antwort = st.text_input("Antwort", key=f"a{st.session_state.answer_key}")
 
-    frage, lösung, erklärung = st.session_state.aufgaben[st.session_state.index]
-
-    st.markdown("<div class='card'>", unsafe_allow_html=True)
-    st.subheader(f"📝 Aufgabe {st.session_state.index + 1}")
-    st.write(frage)
-    antwort = st.text_input("✏️ Deine Antwort")
-
-    if st.button("✅ Prüfen"):
+    if st.button("✔️ Prüfen"):
         richtig = antwort.strip().lower() == str(lösung).lower()
 
-        st.session_state.antworten.append({
-            "frage": frage,
-            "antwort": antwort,
-            "lösung": str(lösung),
-            "richtig": richtig,
-            "erklärung": erklärung
-        })
-
         if richtig:
-            st.success("🎉 Richtig!")
-            st.session_state.punkte += 1
+            st.success("✅ Richtig!")
         else:
             st.error("❌ Falsch")
-            st.info(erklärung)
+            st.info(f"👉 {erklärung}")
 
-        st.session_state.index += 1
+        add_progress(fach, thema, richtig)
+        st.session_state.quiz = []
+        st.session_state.answer_key += 1
         st.rerun()
-
-    st.markdown("</div>", unsafe_allow_html=True)
-
-# ================== ERGEBNIS ==================
-if st.session_state.fertig:
-    st.balloons()
-    st.success(f"🏆 Punkte: {st.session_state.punkte}/{len(st.session_state.aufgaben)}")
-
-    history.setdefault(st.session_state.user, []).append({
-        "datum": datetime.now().strftime("%d.%m.%Y %H:%M"),
-        "ergebnisse": st.session_state.antworten
-    })
-    save_json(HISTORY_FILE, history)
-
-    if st.button("🔁 Neues Quiz"):
-        st.session_state.quiz_aktiv = False
-        st.session_state.fertig = False
-        st.rerun()
-
-# ================== VERLAUF ==================
-st.subheader("📜 Meine Aufgaben")
-
-for eintrag in history.get(st.session_state.user, []):
-    with st.expander(eintrag["datum"]):
-        for a in eintrag["ergebnisse"]:
-            icon = "✅" if a["richtig"] else "❌"
-            st.write(f"{icon} {a['frage']}")
-            if not a["richtig"]:
-                st.caption(f"➡️ Richtig: {a['lösung']}")
