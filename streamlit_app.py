@@ -1,6 +1,5 @@
 import streamlit as st
 import random
-import fractions
 import json
 import os
 
@@ -11,7 +10,7 @@ st.title("📚 Lern-App")
 USERS_FILE = "users.json"
 PROGRESS_FILE = "progress.json"
 
-# -------------------- JSON --------------------
+# -------------------- JSON-Funktionen --------------------
 def load_json(file):
     if not os.path.exists(file):
         with open(file, "w", encoding="utf-8") as f:
@@ -31,17 +30,19 @@ st.session_state.setdefault("user", None)
 st.session_state.setdefault("aufgaben", [])
 st.session_state.setdefault("index", 0)
 st.session_state.setdefault("fertig", False)
+st.session_state.setdefault("antwort_geprüft", False)
 
 # -------------------- LOGIN --------------------
 if st.session_state.user is None:
     st.subheader("🔐 Login / Registrierung")
+
     username = st.text_input("Benutzername")
     password = st.text_input("Passwort", type="password")
 
     col1, col2 = st.columns(2)
 
     with col1:
-        if st.button("Einloggen", key="login"):
+        if st.button("Einloggen"):
             if username in users and users[username]["password"] == password:
                 st.session_state.user = username
                 st.experimental_rerun()
@@ -49,7 +50,7 @@ if st.session_state.user is None:
                 st.error("❌ Benutzername oder Passwort falsch")
 
     with col2:
-        if st.button("Registrieren", key="register"):
+        if st.button("Registrieren"):
             if username in users:
                 st.error("❌ Benutzer existiert bereits")
             else:
@@ -60,30 +61,42 @@ if st.session_state.user is None:
     st.stop()
 
 # -------------------- Aufgaben --------------------
-def generiere_mathe_aufgaben(klasse, anzahl):
+def generiere_mathe_aufgaben(anzahl):
     aufgaben = []
     for _ in range(anzahl):
         a, b = random.randint(1, 20), random.randint(1, 20)
         aufgaben.append((f"{a} + {b}", str(a + b), f"{a} + {b} = {a + b}"))
     return aufgaben
 
-def generiere_englisch_aufgaben(_, anzahl):
-    w = {"rot": "red", "blau": "blue", "Hund": "dog"}
-    return [(f"Übersetze: {k}", v, f"{k} = {v}") for k, v in random.sample(list(w.items()), anzahl)]
+def generiere_englisch_aufgaben(anzahl):
+    vokabeln = {
+        "rot": "red",
+        "blau": "blue",
+        "Hund": "dog"
+    }
+    anzahl = min(anzahl, len(vokabeln))  # 🔴 WICHTIGER BUGFIX
+    return [
+        (f"Übersetze: {k}", v, f"{k} = {v}")
+        for k, v in random.sample(list(vokabeln.items()), anzahl)
+    ]
 
 # -------------------- Menü --------------------
 st.sidebar.write(f"👤 {st.session_state.user}")
-fach = st.sidebar.radio("Fach", ["Mathe", "Englisch"])
-anzahl = st.sidebar.slider("Aufgaben", 1, 5, 3)
 
-if st.sidebar.button("Quiz starten", key="start"):
+fach = st.sidebar.radio("Fach", ["Mathe", "Englisch"])
+
+max_anzahl = 5 if fach == "Mathe" else 3
+anzahl = st.sidebar.slider("Aufgaben", 1, max_anzahl, 3)
+
+if st.sidebar.button("Quiz starten"):
     st.session_state.aufgaben = (
-        generiere_mathe_aufgaben(1, anzahl)
+        generiere_mathe_aufgaben(anzahl)
         if fach == "Mathe"
-        else generiere_englisch_aufgaben(1, anzahl)
+        else generiere_englisch_aufgaben(anzahl)
     )
     st.session_state.index = 0
     st.session_state.fertig = False
+    st.session_state.antwort_geprüft = False
     st.experimental_rerun()
 
 # -------------------- Quiz --------------------
@@ -97,8 +110,8 @@ if st.session_state.aufgaben and not st.session_state.fertig:
     answer_key = f"antwort_{idx}"
     st.text_input("Deine Antwort", key=answer_key)
 
-    if st.button("Antwort prüfen", key=f"check_{idx}"):
-        user_answer = st.session_state.get(answer_key, "").strip().lower()
+    if st.button("Antwort prüfen") and not st.session_state.antwort_geprüft:
+        user_answer = st.session_state[answer_key].strip().lower()
 
         if user_answer == loesung.lower():
             st.success("✅ Richtig!")
@@ -114,23 +127,28 @@ if st.session_state.aufgaben and not st.session_state.fertig:
         })
         save_json(PROGRESS_FILE, progress)
 
-    if st.button("Nächste Aufgabe", key=f"next_{idx}"):
-        st.session_state.index += 1
-        if st.session_state.index >= len(st.session_state.aufgaben):
-            st.session_state.fertig = True
-        st.experimental_rerun()
+        st.session_state.antwort_geprüft = True
+
+    if st.session_state.antwort_geprüft:
+        if st.button("Nächste Aufgabe"):
+            st.session_state.index += 1
+            st.session_state.antwort_geprüft = False
+            if st.session_state.index >= len(st.session_state.aufgaben):
+                st.session_state.fertig = True
+            st.experimental_rerun()
 
 elif st.session_state.fertig:
     st.success("🎉 Quiz beendet!")
-    if st.button("Nochmal spielen", key="restart"):
+    if st.button("Nochmal spielen"):
         st.session_state.aufgaben = []
         st.session_state.fertig = False
         st.experimental_rerun()
 
 # -------------------- Fortschritt --------------------
 st.sidebar.subheader("📊 Fortschritt")
-if st.sidebar.button("Anzeigen", key="progress"):
-    for e in progress.get(st.session_state.user, []):
-        st.write(f"{e['fach']} | {e['frage']} → {e['loesung']}")
-
-
+if st.sidebar.button("Anzeigen"):
+    einträge = progress.get(st.session_state.user, [])
+    if not einträge:
+        st.sidebar.info("Noch keine Einträge")
+    for e in einträge:
+        st.sidebar.write(f"{e['fach']} | {e['frage']} → {e['loesung']}")
