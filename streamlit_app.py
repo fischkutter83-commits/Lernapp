@@ -11,13 +11,16 @@ st.title("📚 Lern-App")
 USERS_FILE = "users.json"
 PROGRESS_FILE = "progress.json"
 
-# -------------------- JSON laden/speichern --------------------
+# -------------------- JSON laden / speichern --------------------
 def load_json(file):
     if not os.path.exists(file):
         with open(file, "w") as f:
             json.dump({}, f)
     with open(file, "r") as f:
-        return json.load(f)
+        try:
+            return json.load(f)
+        except json.JSONDecodeError:
+            return {}
 
 def save_json(file, data):
     with open(file, "w") as f:
@@ -47,7 +50,8 @@ if st.session_state.user is None:
     col1, col2 = st.columns(2)
     with col1:
         if st.button("Einloggen"):
-            if username in users and users[username].get("password") == password:
+            user_data = users.get(username)
+            if isinstance(user_data, dict) and user_data.get("password") == password:
                 st.session_state.user = username
                 st.success(f"Willkommen, {username} 👋")
                 st.experimental_rerun()
@@ -111,11 +115,10 @@ def generiere_englisch_aufgaben(klasse,anzahl):
         aufgaben.append((f"Übersetze: {de}", en, f"{de} = {en}"))
     return aufgaben
 
-# -------------------- Sidebar --------------------
+# -------------------- Menü --------------------
 st.sidebar.write(f"👤 Eingeloggt als: {st.session_state.user}")
 fach = st.sidebar.radio("Fach wählen:", ["Mathe","Deutsch","Englisch"])
 klasse = st.sidebar.slider("Klassenstufe:",1,10,1)
-modus = st.sidebar.radio("Aufgabentyp:", ["Zufall","Thema"])
 anzahl = st.sidebar.slider("Anzahl Aufgaben:",1,10,5)
 
 if st.sidebar.button("🧩 Quiz starten"):
@@ -128,22 +131,21 @@ if st.sidebar.button("🧩 Quiz starten"):
     st.session_state.index=0
     st.session_state.fertig=False
     st.session_state.antwort=""
+    st.experimental_rerun()
 
 # -------------------- Quiz Ablauf --------------------
 if st.session_state.aufgaben and not st.session_state.fertig:
     frage, loesung, erklaerung = st.session_state.aufgaben[st.session_state.index]
     st.subheader(f"Aufgabe {st.session_state.index+1}")
     st.write(frage)
-    
     st.session_state.antwort = st.text_input("Deine Antwort:", value="", key=f"antwort_{st.session_state.index}")
-    
     col1, col2 = st.columns(2)
     with col1:
-        if st.button("✅ Prüfen"):
+        if st.button("Antwort prüfen"):
             if st.session_state.antwort.strip().lower()==loesung.strip().lower():
-                st.success("Richtig!")
+                st.success("✅ Richtig!")
             else:
-                st.error("Falsch!")
+                st.error("❌ Falsch!")
                 st.info(erklaerung)
             # Fortschritt speichern
             if st.session_state.user not in progress:
@@ -155,10 +157,11 @@ if st.session_state.aufgaben and not st.session_state.fertig:
                 "lösung":loesung
             })
             save_json(PROGRESS_FILE,progress)
-            st.session_state.antwort=""  # Eingabefeld zurücksetzen
+            st.session_state.antwort = ""  # Antwortfeld leeren
     with col2:
-        if st.button("➡️ Nächste Aufgabe"):
+        if st.button("Nächste Aufgabe"):
             st.session_state.index += 1
+            st.session_state.antwort = ""
             if st.session_state.index >= len(st.session_state.aufgaben):
                 st.session_state.fertig=True
             st.experimental_rerun()
@@ -170,15 +173,14 @@ elif st.session_state.fertig:
         st.session_state.index=0
         st.session_state.fertig=False
         st.session_state.antwort=""
+        st.experimental_rerun()
 
-# -------------------- Fortschritt --------------------
+# -------------------- Fortschritt anzeigen --------------------
 st.sidebar.subheader("Erledigt ✅")
 if st.sidebar.button("Fortschritt anzeigen"):
-    if st.session_state.user in progress:
-        for eintrag in progress[st.session_state.user]:
-            deine_antwort = eintrag.get("deine_antwort") or eintrag.get("antwort") or ""
-            loesung = eintrag.get("lösung") or eintrag.get("loesung") or ""
-            frage = eintrag.get("frage") or ""
-            st.write(f"{frage} → {deine_antwort} (Lösung: {loesung})")
+    user_progress = progress.get(st.session_state.user, [])
+    if user_progress:
+        for eintrag in user_progress:
+            st.write(f"{eintrag['frage']} → {eintrag['deine_antwort']} (Lösung: {eintrag['lösung']})")
     else:
         st.info("Noch keine erledigten Aufgaben.")
