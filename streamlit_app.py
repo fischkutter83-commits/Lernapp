@@ -70,94 +70,91 @@ def generiere_mathe_aufgaben(klasse, anzahl):
     aufgaben = []
     ops = ["Plus","Minus","Mal","Geteilt","Bruch","Potenz"] if klasse > 6 else ["Plus","Minus","Mal","Geteilt"]
 
-    for _ in range(anzahl):
+    while len(aufgaben) < anzahl:
         art = random.choice(ops)
 
         if art == "Plus":
             a, b = random.randint(1, 50), random.randint(1, 50)
-            aufgaben.append((f"{a} + {b}", str(a + b), f"{a} + {b} = {a + b}"))
+            frage = f"{a} + {b}"
+            loesung = str(a + b)
+            erklaerung = f"{a} + {b} = {a + b}"
 
         elif art == "Minus":
             a, b = random.randint(20, 50), random.randint(1, 20)
-            aufgaben.append((f"{a} - {b}", str(a - b), f"{a} - {b} = {a - b}"))
+            frage = f"{a} - {b}"
+            loesung = str(a - b)
+            erklaerung = f"{a} - {b} = {a - b}"
 
         elif art == "Mal":
             a, b = random.randint(2, 12), random.randint(2, 12)
-            aufgaben.append((f"{a} × {b}", str(a * b), f"{a} × {b} = {a * b}"))
+            frage = f"{a} × {b}"
+            loesung = str(a * b)
+            erklaerung = f"{a} × {b} = {a * b}"
 
         elif art == "Geteilt":
             b = random.randint(2, 12)
             ergebnis = random.randint(2, 12)
             a = b * ergebnis
-            aufgaben.append((f"{a} ÷ {b}", str(ergebnis), f"{a} ÷ {b} = {ergebnis}"))
+            frage = f"{a} ÷ {b}"
+            loesung = str(ergebnis)
+            erklaerung = f"{a} ÷ {b} = {ergebnis}"
 
         elif art == "Bruch":
             a, b, c, d = [random.randint(1, 9) for _ in range(4)]
             f1, f2 = fractions.Fraction(a, b), fractions.Fraction(c, d)
-            aufgaben.append((f"{a}/{b} + {c}/{d}", str(f1 + f2), f"{f1} + {f2} = {f1 + f2}"))
+            frage = f"{a}/{b} + {c}/{d}"
+            loesung = str(f1 + f2)
+            erklaerung = f"{f1} + {f2} = {f1 + f2}"
 
         elif art == "Potenz":
             a, b = random.randint(2, 9), random.randint(2, 4)
-            aufgaben.append((f"{a}^{b}", str(a ** b), f"{a}^{b} = {a ** b}"))
+            frage = f"{a}^{b}"
+            loesung = str(a ** b)
+            erklaerung = f"{a}^{b} = {a ** b}"
+
+        if frage not in [f[0] for f in aufgaben]:
+            aufgaben.append((frage, loesung, erklaerung))
 
     return aufgaben
 
 # -------------------- DEUTSCH --------------------
 def generiere_deutsch_aufgaben(klasse, anzahl):
     daten = {
-        1: ("Plural", {
-            "Hund": "Hunde",
-            "Katze": "Katzen",
-            "Auto": "Autos"
-        }),
-        3: ("Artikel", {
-            "Apfel": "der",
-            "Blume": "die",
-            "Haus": "das"
-        }),
-        5: ("Wortart", {
-            "laufen": "Verb",
-            "schön": "Adjektiv",
-            "Baum": "Nomen"
-        }),
-        7: ("Synonym", {
-            "groß": "riesig",
-            "klein": "winzig",
-            "schnell": "flink"
-        })
+        1: ("Plural", {"Hund": "Hunde","Katze": "Katzen","Auto": "Autos"}),
+        3: ("Artikel", {"Apfel": "der","Blume": "die","Haus": "das"}),
+        5: ("Wortart", {"laufen": "Verb","schön": "Adjektiv","Baum": "Nomen"}),
+        7: ("Synonym", {"groß": "riesig","klein": "winzig","schnell": "flink"})
     }
-
     stufe = max(k for k in daten if klasse >= k)
     thema, woerter = daten[stufe]
 
     aufgaben = []
-    for _ in range(anzahl):
+    while len(aufgaben) < anzahl:
         wort, loesung = random.choice(list(woerter.items()))
-        aufgaben.append(
-            (f"{thema}: {wort}", loesung, f"Richtig ist: {loesung}")
-        )
-
+        frage = f"{thema}: {wort}"
+        erklaerung = f"Richtig ist: {loesung}"
+        if frage not in [f[0] for f in aufgaben]:
+            aufgaben.append((frage, loesung, erklaerung))
     return aufgaben
 
 # -------------------- ENGLISCH --------------------
 def generiere_englisch_aufgaben(klasse, anzahl):
     daten = {
-        1: {"rot": "red", "blau": "blue", "grün": "green"},
-        3: {"Hund": "dog", "Katze": "cat", "Haus": "house"},
-        5: {"gehen": "go", "sehen": "see", "kommen": "come"},
-        7: {"schnell": "fast", "groß": "big", "klein": "small"}
+        1: {"rot": "red","blau": "blue","grün": "green"},
+        3: {"Hund": "dog","Katze": "cat","Haus": "house"},
+        5: {"gehen": "go","sehen": "see","kommen": "come"},
+        7: {"schnell": "fast","groß": "big","klein": "small"}
     }
-
     stufe = max(k for k in daten if klasse >= k)
     woerter = daten[stufe]
 
     aufgaben = []
-    for _ in range(anzahl):
+    while len(aufgaben) < anzahl:
         de, en = random.choice(list(woerter.items()))
-        aufgaben.append(
-            (f"Übersetze: {de}", en, f"{de} = {en}")
-        )
-
+        frage = f"Übersetze: {de}"
+        erklaerung = f"{de} = {en}"
+        if frage not in [f[0] for f in aufgaben]:
+            aufgaben.append((frage, en, erklaerung))
     return aufgaben
 
 # -------------------- Menü --------------------
