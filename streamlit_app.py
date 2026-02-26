@@ -139,14 +139,22 @@ def generiere_deutsch_aufgaben(klasse, anzahl):
 
 # -------------------- ENGLISCH --------------------
 def generiere_englisch_aufgaben(klasse, anzahl):
-    daten = {
-        1: {"rot": "red","blau": "blue","grün": "green"},
-        3: {"Hund": "dog","Katze": "cat","Haus": "house"},
-        5: {"gehen": "go","sehen": "see","kommen": "come"},
-        7: {"schnell": "fast","groß": "big","klein": "small"}
-    }
-    stufe = max(k for k in daten if klasse >= k)
-    woerter = daten[stufe]
+    # Angepasst an Klassenniveau
+    if klasse <= 2:
+        woerter = {"rot": "red","blau": "blue","grün": "green","Hund":"dog","Katze":"cat"}
+    elif klasse <= 4:
+        woerter = {"Apfel":"apple","Haus":"house","Ball":"ball","Buch":"book"}
+    elif klasse <= 6:
+        woerter = {"gehen":"go","sehen":"see","kommen":"come","spielen":"play","lesen":"read"}
+    elif klasse <= 8:
+        woerter = {"schnell":"fast","groß":"big","klein":"small","glücklich":"happy","traurig":"sad"}
+    else:  # Klasse 9-10
+        woerter = {
+            "Ich gehe zur Schule":"I go to school",
+            "Er spielt Fußball":"He plays soccer",
+            "Sie liest ein Buch":"She reads a book",
+            "Wir essen Abendessen":"We eat dinner"
+        }
 
     aufgaben = []
     while len(aufgaben) < anzahl:
@@ -234,3 +242,4 @@ if st.sidebar.button("Fortschritt anzeigen"):
             fach = e.get("fach", "—")
 
             st.write(f"📘 **{fach}**: {frage} → {antwort} (Lösung: {loesung})")
+            
