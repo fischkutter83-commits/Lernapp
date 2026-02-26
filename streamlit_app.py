@@ -35,7 +35,8 @@ for key, default in {
     "aufgaben": [],
     "index": 0,
     "fertig": False,
-    "antwort": ""
+    "antwort": "",
+    "button_pruefen": False
 }.items():
     st.session_state.setdefault(key, default)
 
@@ -63,161 +64,166 @@ if st.session_state.user is None:
                 users[username] = {"password": password}
                 save_json(USERS_FILE, users)
                 st.success("✅ Account erstellt – bitte einloggen")
-
     st.stop()
 
 # -------------------- MATHE --------------------
 def generiere_mathe_aufgaben(klasse, anzahl, themen):
     aufgaben = []
-    ops = []
-    if "Addition" in themen: ops.append("Plus")
-    if "Subtraktion" in themen: ops.append("Minus")
-    if "Multiplikation" in themen: ops.append("Mal")
-    if "Division" in themen: ops.append("Geteilt")
-    if "Brüche" in themen and klasse > 6: ops.append("Bruch")
-    if "Potenzen" in themen and klasse > 6: ops.append("Potenz")
-
     while len(aufgaben) < anzahl:
-        art = random.choice(ops)
-        if art == "Plus":
-            a, b = random.randint(1, 50), random.randint(1, 50)
-            frage, loesung, erklaerung = f"{a} + {b}", str(a+b), f"{a} + {b} = {a+b}"
-        elif art == "Minus":
-            a, b = random.randint(20,50), random.randint(1,20)
-            frage, loesung, erklaerung = f"{a} - {b}", str(a-b), f"{a} - {b} = {a-b}"
-        elif art == "Mal":
-            a, b = random.randint(2,12), random.randint(2,12)
-            frage, loesung, erklaerung = f"{a} × {b}", str(a*b), f"{a} × {b} = {a*b}"
-        elif art == "Geteilt":
-            b = random.randint(2,12)
-            ergebnis = random.randint(2,12)
-            a = b * ergebnis
-            frage, loesung, erklaerung = f"{a} ÷ {b}", str(ergebnis), f"{a} ÷ {b} = {ergebnis}"
-        elif art == "Bruch":
-            a,b,c,d = [random.randint(1,9) for _ in range(4)]
-            f1,f2 = fractions.Fraction(a,b), fractions.Fraction(c,d)
-            frage, loesung, erklaerung = f"{a}/{b} + {c}/{d}", str(f1+f2), f"{f1} + {f2} = {f1+f2}"
-        elif art == "Potenz":
-            a,b = random.randint(2,9), random.randint(2,4)
-            frage, loesung, erklaerung = f"{a}^{b}", str(a**b), f"{a}^{b} = {a**b}"
-        if frage not in [f[0] for f in aufgaben]:
-            aufgaben.append((frage, loesung, erklaerung))
+        thema = random.choice(themen)
+        frage, loesung = "", ""
+        # Unterthemen
+        if thema=="Addition":
+            a,b=random.randint(1,50),random.randint(1,50)
+            frage,f"{a}+{b}",str(a+b)
+        elif thema=="Subtraktion":
+            a,b=random.randint(1,50),random.randint(1,30)
+            frage,f"{a}-{b}",str(a-b)
+        elif thema=="Multiplikation":
+            a,b=random.randint(2,12),random.randint(2,12)
+            frage,f"{a}×{b}",str(a*b)
+        elif thema=="Division":
+            b=random.randint(2,12)
+            ergebnis=random.randint(2,12)
+            a=b*ergebnis
+            frage,f"{a}÷{b}",str(ergebnis)
+        elif thema=="Bruchrechnung":
+            a,b,c,d=[random.randint(1,9) for _ in range(4)]
+            f1,f2=fractions.Fraction(a,b),fractions.Fraction(c,d)
+            frage=f"{a}/{b}+{c}/{d}"
+            loesung=str(f1+f2)
+        elif thema=="Prozentrechnung":
+            x=random.randint(10,200)
+            p=random.randint(5,50)
+            frage=f"{p}% von {x}"
+            loesung=str(round(x*p/100,2))
+        elif thema=="Flächenberechnung":
+            l=random.randint(1,20)
+            b=random.randint(1,20)
+            frage=f"Rechteck: Länge={l}, Breite={b}. Fläche?"
+            loesung=str(l*b)
+        if frage and frage not in [f[0] for f in aufgaben]:
+            aufgaben.append((frage,loesung,f"{frage} = {loesung}"))
     return aufgaben
 
 # -------------------- DEUTSCH --------------------
 def generiere_deutsch_aufgaben(klasse, anzahl, themen):
-    daten = {
-        1: {"Plural": {"Hund":"Hunde","Katze":"Katzen","Auto":"Autos"},
-            "Artikel": {"Apfel":"der","Blume":"die","Haus":"das"},
-            "Wortart": {"laufen":"Verb","schön":"Adjektiv","Baum":"Nomen"}},
-        5: {"Synonym": {"groß":"riesig","klein":"winzig","schnell":"flink"},
-            "Plural": {"Maus":"Mäuse","Blume":"Blumen","Auto":"Autos"},
-            "Artikel": {"Buch":"das","Stuhl":"der","Tisch":"der"}}
-    }
-    stufe = max(k for k in daten if klasse >= k)
-    alle_themen = {k:v for k,v in daten[stufe].items() if k in themen}
-    alle_aufgaben = []
-    while len(alle_aufgaben) < anzahl:
-        thema, woerter = random.choice(list(alle_themen.items()))
-        wort, loesung = random.choice(list(woerter.items()))
-        frage, erklaerung = f"{thema}: {wort}", f"Richtig ist: {loesung}"
-        if frage not in [f[0] for f in alle_aufgaben]:
-            alle_aufgaben.append((frage, loesung, erklaerung))
-    return alle_aufgaben
+    aufgaben=[]
+    while len(aufgaben)<anzahl:
+        thema=random.choice(themen)
+        frage, loesung = "",""
+        if thema=="Satzglieder":
+            frage="Finde das Subjekt: 'Der Hund läuft im Park.'"
+            loesung="Der Hund"
+        elif thema=="Kommasetzung":
+            frage="Setze Kommas: Ich mag Äpfel Birnen und Bananen."
+            loesung="Ich mag Äpfel, Birnen und Bananen."
+        elif thema=="Großkleinschreibung":
+            frage="Schreibe richtig: der mann geht nach hause."
+            loesung="Der Mann geht nach Hause."
+        elif thema=="Rechtschreibstrategien":
+            frage="Richtig schreiben: Apfel oder Apfel?"
+            loesung="Apfel"
+        if frage and frage not in [f[0] for f in aufgaben]:
+            aufgaben.append((frage,loesung,f"Richtig: {loesung}"))
+    return aufgaben
 
 # -------------------- ENGLISCH --------------------
 def generiere_englisch_aufgaben(klasse, anzahl, themen):
-    themen_dict = {}
-    if "Farben" in themen: themen_dict.update({"rot":"red","blau":"blue","grün":"green"})
-    if "Tiere" in themen: themen_dict.update({"Hund":"dog","Katze":"cat","Haus":"house"})
-    if "Verben" in themen and klasse>=5: themen_dict.update({"gehen":"go","sehen":"see","kommen":"come"})
-    if "Adjektive" in themen and klasse>=7: themen_dict.update({"schnell":"fast","groß":"big","klein":"small","glücklich":"happy"})
-    if "Sätze" in themen and klasse>=9: themen_dict.update({
-        "Ich gehe zur Schule":"I go to school",
-        "Er spielt Fußball":"He plays soccer",
-        "Sie liest ein Buch":"She reads a book",
-        "Wir essen Abendessen":"We eat dinner"
-    })
-    aufgaben = []
-    while len(aufgaben) < anzahl:
-        de, en = random.choice(list(themen_dict.items()))
-        frage, erklaerung = f"Übersetze: {de}", f"{de} = {en}"
-        if frage not in [f[0] for f in aufgaben]:
-            aufgaben.append((frage, en, erklaerung))
+    aufgaben=[]
+    while len(aufgaben)<anzahl:
+        thema=random.choice(themen)
+        frage, loesung="",""
+        if thema=="Vocabulary":
+            vocab=[("Hund","dog"),("Katze","cat"),("Haus","house"),("Auto","car")]
+            de,en=random.choice(vocab)
+            frage=f"Übersetze: {de}"
+            loesung=en
+        elif thema=="Grammatik":
+            grammatik=[("He goes to school","Er geht zur Schule"),("I am happy","Ich bin glücklich")]
+            de,en=random.choice(grammatik)
+            frage=f"Übersetze: {de}"
+            loesung=en
+        elif thema=="Zeitformen":
+            zeit=[("I went to school","Ich ging zur Schule"),("She is reading","Sie liest gerade")]
+            de,en=random.choice(zeit)
+            frage=f"Übersetze: {de}"
+            loesung=en
+        if frage and frage not in [f[0] for f in aufgaben]:
+            aufgaben.append((frage,loesung,f"{frage} = {loesung}"))
     return aufgaben
 
-# -------------------- Sidebar Menü --------------------
+# -------------------- Sidebar --------------------
 st.sidebar.write(f"👤 Eingeloggt als: {st.session_state.user}")
-fach = st.sidebar.radio("Fach:", ["Mathe", "Deutsch", "Englisch"])
-klasse = st.sidebar.slider("Klassenstufe:", 1, 10, 1)
-anzahl = st.sidebar.slider("Anzahl Aufgaben:", 1, 10, 5)
+fach=st.sidebar.radio("Fach:",["Mathe","Deutsch","Englisch"])
+klasse=st.sidebar.slider("Klassenstufe:",1,10,1)
+anzahl=st.sidebar.slider("Anzahl Aufgaben:",1,10,5)
 
-# Unterthemen
+# Unterthemen auswählen
 if fach=="Mathe":
-    unterthemen = st.sidebar.multiselect("Unterthemen Mathe:", ["Addition","Subtraktion","Multiplikation","Division","Brüche","Potenzen"], default=["Addition"])
+    unterthemen=st.sidebar.multiselect("Unterthemen Mathe:",["Addition","Subtraktion","Multiplikation","Division","Bruchrechnung","Prozentrechnung","Flächenberechnung"],default=["Addition"])
 elif fach=="Deutsch":
-    unterthemen = st.sidebar.multiselect("Unterthemen Deutsch:", ["Plural","Artikel","Wortart","Synonym"], default=["Plural"])
+    unterthemen=st.sidebar.multiselect("Unterthemen Deutsch:",["Satzglieder","Kommasetzung","Großkleinschreibung","Rechtschreibstrategien"],default=["Satzglieder"])
 else:
-    unterthemen = st.sidebar.multiselect("Unterthemen Englisch:", ["Farben","Tiere","Verben","Adjektive","Sätze"], default=["Farben"])
+    unterthemen=st.sidebar.multiselect("Unterthemen Englisch:",["Vocabulary","Grammatik","Zeitformen"],default=["Vocabulary"])
 
 if st.sidebar.button("🧩 Quiz starten"):
-    if fach=="Mathe": st.session_state.aufgaben = generiere_mathe_aufgaben(klasse, anzahl, unterthemen)
-    elif fach=="Deutsch": st.session_state.aufgaben = generiere_deutsch_aufgaben(klasse, anzahl, unterthemen)
-    else: st.session_state.aufgaben = generiere_englisch_aufgaben(klasse, anzahl, unterthemen)
-    st.session_state.index = 0
-    st.session_state.fertig = False
+    if fach=="Mathe": st.session_state.aufgaben=generiere_mathe_aufgaben(klasse,anzahl,unterthemen)
+    elif fach=="Deutsch": st.session_state.aufgaben=generiere_deutsch_aufgaben(klasse,anzahl,unterthemen)
+    else: st.session_state.aufgaben=generiere_englisch_aufgaben(klasse,anzahl,unterthemen)
+    st.session_state.index=0
+    st.session_state.fertig=False
+    st.session_state.antwort=""
     st.rerun()
 
 # -------------------- Quiz Ablauf --------------------
 if st.session_state.aufgaben and not st.session_state.fertig:
-    frage, loesung, erklaerung = st.session_state.aufgaben[st.session_state.index]
+    frage,loesung,erklaerung=st.session_state.aufgaben[st.session_state.index]
     st.subheader(f"Aufgabe {st.session_state.index+1}")
     st.write(frage)
-
-    # Antwortfeld mit Enter-Taste
-    st.session_state.antwort = st.text_input("Deine Antwort:", value=st.session_state.antwort, key="antwort_input", on_change=lambda: st.session_state.button_pruefen=True)
     
-    # Prüfen
-    if st.session_state.get("button_pruefen", False):
-        if st.session_state.antwort.strip().lower() == loesung.strip().lower():
+    st.session_state.antwort=st.text_input("Deine Antwort:",value=st.session_state.antwort,key="antwort_input",
+                                         on_change=lambda: setattr(st.session_state,'button_pruefen',True))
+    
+    if st.session_state.get("button_pruefen",False):
+        if st.session_state.antwort.strip().lower()==loesung.strip().lower():
             st.success("✅ Richtig!")
         else:
             st.error("❌ Falsch!")
             st.info(erklaerung)
-
-        progress.setdefault(st.session_state.user, []).append({
-            "fach": fach,
-            "frage": frage,
-            "deine_antwort": st.session_state.antwort,
-            "lösung": loesung
+        progress.setdefault(st.session_state.user,[]).append({
+            "fach":fach,
+            "frage":frage,
+            "deine_antwort":st.session_state.antwort,
+            "lösung":loesung
         })
-        save_json(PROGRESS_FILE, progress)
-
-        st.session_state.antwort = ""
-        st.session_state.index += 1
-        st.session_state.button_pruefen = False
-        if st.session_state.index >= len(st.session_state.aufgaben):
-            st.session_state.fertig = True
+        save_json(PROGRESS_FILE,progress)
+        st.session_state.antwort=""
+        st.session_state.index+=1
+        st.session_state.button_pruefen=False
+        if st.session_state.index>=len(st.session_state.aufgaben):
+            st.session_state.fertig=True
         st.experimental_rerun()
 
 elif st.session_state.fertig:
     st.success("🎉 Quiz beendet!")
     if st.button("🔁 Nochmal spielen"):
-        st.session_state.aufgaben = []
-        st.session_state.index = 0
-        st.session_state.fertig = False
+        st.session_state.aufgaben=[]
+        st.session_state.index=0
+        st.session_state.fertig=False
+        st.session_state.antwort=""
         st.rerun()
 
 # -------------------- Fortschritt --------------------
 st.sidebar.subheader("Erledigt ✅")
 if st.sidebar.button("Fortschritt anzeigen"):
-    user_progress = progress.get(st.session_state.user, [])
+    user_progress=progress.get(st.session_state.user,[])
     if not user_progress:
         st.info("Noch keine erledigten Aufgaben.")
     else:
         for e in user_progress:
-            frage = e.get("frage","❓ Unbekannt")
-            antwort = e.get("deine_antwort","—")
-            loesung = e.get("lösung","—")
-            fach = e.get("fach","—")
+            frage=e.get("frage","❓ Unbekannt")
+            antwort=e.get("deine_antwort","—")
+            loesung=e.get("lösung","—")
+            fach=e.get("fach","—")
             st.write(f"📘 **{fach}**: {frage} → {antwort} (Lösung: {loesung})")
