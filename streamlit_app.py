@@ -54,13 +54,15 @@ if st.session_state.user is None:
             if isinstance(user_data, dict) and user_data.get("password") == password:
                 st.session_state.user = username
                 st.success(f"Willkommen, {username} 👋")
-                st.rerun()
+                st.experimental_rerun()
             else:
                 st.error("❌ Benutzername oder Passwort falsch")
     with col2:
         if st.button("Registrieren"):
             if username in users:
                 st.error("❌ Benutzer existiert bereits")
+            elif not username or not password:
+                st.error("❌ Bitte Benutzername und Passwort eingeben")
             else:
                 users[username] = {"password": password}
                 save_json(USERS_FILE, users)
@@ -138,7 +140,7 @@ if st.sidebar.button("🧩 Quiz starten"):
     st.session_state.index = 0
     st.session_state.fertig = False
     st.session_state.antwort = ""
-    st.rerun()
+    st.experimental_rerun()
 
 # -------------------- Quiz Ablauf --------------------
 if st.session_state.aufgaben and not st.session_state.fertig:
@@ -153,7 +155,7 @@ if st.session_state.aufgaben and not st.session_state.fertig:
 
     col1, col2 = st.columns(2)
     with col1:
-        if st.button("Antwort prüfen"):
+        if st.button("Antwort prüfen", key=f"pruefen_{st.session_state.index}"):
             if antwort.strip().lower() == loesung.strip().lower():
                 st.success("✅ Richtig!")
             else:
@@ -169,11 +171,11 @@ if st.session_state.aufgaben and not st.session_state.fertig:
             save_json(PROGRESS_FILE, progress)
 
     with col2:
-        if st.button("Nächste Aufgabe"):
+        if st.button("Nächste Aufgabe", key=f"naechste_{st.session_state.index}"):
             st.session_state.index += 1
             if st.session_state.index >= len(st.session_state.aufgaben):
                 st.session_state.fertig = True
-            st.rerun()
+            st.experimental_rerun()
 
 elif st.session_state.fertig:
     st.success("🎉 Quiz beendet!")
@@ -182,7 +184,7 @@ elif st.session_state.fertig:
         st.session_state.index = 0
         st.session_state.fertig = False
         st.session_state.antwort = ""
-        st.rerun()
+        st.experimental_rerun()
 
 # -------------------- Fortschritt anzeigen --------------------
 st.sidebar.subheader("Erledigt ✅")
