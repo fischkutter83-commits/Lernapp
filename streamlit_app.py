@@ -36,7 +36,8 @@ for key, default in {
     "index": 0,
     "fertig": False,
     "antwort": "",
-    "button_pruefen": False
+    "button_pruefen": False,
+    "punkte": 0
 }.items():
     st.session_state.setdefault(key, default)
 
@@ -72,25 +73,24 @@ def generiere_mathe_aufgaben(klasse, anzahl, themen):
     while len(aufgaben) < anzahl:
         thema = random.choice(themen)
         frage, loesung = "", ""
-        # Unterthemen
         if thema=="Addition":
             a,b=random.randint(1,50),random.randint(1,50)
-            frage,f"{a}+{b}",str(a+b)
+            frage,f"{a} + {b}",str(a+b)
         elif thema=="Subtraktion":
             a,b=random.randint(1,50),random.randint(1,30)
-            frage,f"{a}-{b}",str(a-b)
+            frage,f"{a} - {b}",str(a-b)
         elif thema=="Multiplikation":
             a,b=random.randint(2,12),random.randint(2,12)
-            frage,f"{a}×{b}",str(a*b)
+            frage,f"{a} × {b}",str(a*b)
         elif thema=="Division":
             b=random.randint(2,12)
             ergebnis=random.randint(2,12)
             a=b*ergebnis
-            frage,f"{a}÷{b}",str(ergebnis)
+            frage,f"{a} ÷ {b}",str(ergebnis)
         elif thema=="Bruchrechnung":
             a,b,c,d=[random.randint(1,9) for _ in range(4)]
             f1,f2=fractions.Fraction(a,b),fractions.Fraction(c,d)
-            frage=f"{a}/{b}+{c}/{d}"
+            frage=f"{a}/{b} + {c}/{d}"
             loesung=str(f1+f2)
         elif thema=="Prozentrechnung":
             x=random.randint(10,200)
@@ -174,12 +174,13 @@ if st.sidebar.button("🧩 Quiz starten"):
     st.session_state.index=0
     st.session_state.fertig=False
     st.session_state.antwort=""
+    st.session_state.punkte=0
     st.rerun()
 
 # -------------------- Quiz Ablauf --------------------
 if st.session_state.aufgaben and not st.session_state.fertig:
     frage,loesung,erklaerung=st.session_state.aufgaben[st.session_state.index]
-    st.subheader(f"Aufgabe {st.session_state.index+1}")
+    st.subheader(f"Aufgabe {st.session_state.index+1} / {len(st.session_state.aufgaben)}")
     st.write(frage)
     
     st.session_state.antwort=st.text_input("Deine Antwort:",value=st.session_state.antwort,key="antwort_input",
@@ -188,6 +189,7 @@ if st.session_state.aufgaben and not st.session_state.fertig:
     if st.session_state.get("button_pruefen",False):
         if st.session_state.antwort.strip().lower()==loesung.strip().lower():
             st.success("✅ Richtig!")
+            st.session_state.punkte +=1
         else:
             st.error("❌ Falsch!")
             st.info(erklaerung)
@@ -206,12 +208,14 @@ if st.session_state.aufgaben and not st.session_state.fertig:
         st.experimental_rerun()
 
 elif st.session_state.fertig:
-    st.success("🎉 Quiz beendet!")
+    st.success(f"🎉 Quiz beendet! Du hast {st.session_state.punkte} von {len(st.session_state.aufgaben)} Aufgaben richtig.")
+    st.progress(st.session_state.punkte/len(st.session_state.aufgaben))
     if st.button("🔁 Nochmal spielen"):
         st.session_state.aufgaben=[]
         st.session_state.index=0
         st.session_state.fertig=False
         st.session_state.antwort=""
+        st.session_state.punkte=0
         st.rerun()
 
 # -------------------- Fortschritt --------------------
