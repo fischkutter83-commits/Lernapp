@@ -193,3 +193,4 @@ if st.sidebar.button("Fortschritt anzeigen"):
             st.write(f"{e['frage']} → {e['deine_antwort']} (Lösung: {e['lösung']})")
     else:
         st.info("Noch keine erledigten Aufgaben.")
+
