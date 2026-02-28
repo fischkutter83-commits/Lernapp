@@ -33,15 +33,9 @@ users = load_json(USERS_FILE)
 progress = load_json(PROGRESS_FILE)
 
 # -------------------- Session State --------------------
-defaults = {
-    "user": None,
-    "aufgaben": [],
-    "index": 0,
-    "fertig": False
-}
-for k, v in defaults.items():
-    if k not in st.session_state:
-        st.session_state[k] = v
+for key in ["user", "aufgaben", "index", "fertig"]:
+    if key not in st.session_state:
+        st.session_state[key] = None if key == "user" else 0 if key == "index" else False if key == "fertig" else []
 
 # -------------------- LOGIN --------------------
 if st.session_state.user is None:
@@ -68,68 +62,110 @@ if st.session_state.user is None:
                 users[username] = {"password": password}
                 save_json(USERS_FILE, users)
                 st.success("Account erstellt – bitte einloggen")
-
     st.stop()
 
 # ============================================================
 # ===================== AUFGABENGENERATOREN ==================
 # ============================================================
 
-def mathe_aufgaben(thema, anzahl):
+def mathe_aufgaben(thema, klasse, anzahl):
     a = []
+
+    if klasse <= 3:
+        max_zahl = 20
+    elif klasse <= 6:
+        max_zahl = 100
+    else:
+        max_zahl = 500
+
     for _ in range(anzahl):
         if thema == "Addition":
-            x, y = random.randint(1, 50), random.randint(1, 50)
+            x, y = random.randint(1, max_zahl), random.randint(1, max_zahl)
             a.append((f"{x} + {y}", str(x + y)))
+
         elif thema == "Subtraktion":
-            x, y = random.randint(20, 50), random.randint(1, 20)
+            x, y = random.randint(10, max_zahl), random.randint(1, 10)
             a.append((f"{x} - {y}", str(x - y)))
+
         elif thema == "Multiplikation":
-            x, y = random.randint(2, 12), random.randint(2, 12)
+            x = random.randint(2, 5 if klasse <= 3 else 12)
+            y = random.randint(2, 5 if klasse <= 3 else 12)
             a.append((f"{x} × {y}", str(x * y)))
+
         elif thema == "Division":
-            y = random.randint(2, 12)
-            r = random.randint(2, 12)
+            y = random.randint(2, 10)
+            r = random.randint(2, 10)
             a.append((f"{y*r} ÷ {y}", str(r)))
-        elif thema == "Potenzieren":
-            x, y = random.randint(2, 6), random.randint(2, 4)
+
+        elif thema == "Potenzieren" and klasse >= 5:
+            x = random.randint(2, 5)
+            y = random.randint(2, 3 if klasse <= 7 else 4)
             a.append((f"{x}^{y}", str(x ** y)))
+
     return a
 
-def deutsch_aufgaben(thema, anzahl):
+def deutsch_aufgaben(thema, klasse, anzahl):
     daten = {
-        "Rechtschreibung": {"Hant": "Hand", "Hauß": "Haus"},
-        "Artikel": {"___ Hund": "der", "___ Katze": "die"},
-        "Satzglieder": {"Ich ___ den Ball": "werfe"},
-        "Wortarten": {"laufen": "Verb", "Haus": "Nomen"}
+        "Rechtschreibung": {
+            1: {"Hant": "Hand", "Hauß": "Haus"},
+            4: {"Fahrrat": "Fahrrad", "Seite": "Saite"},
+            7: {"wierklich": "wirklich", "Interresse": "Interesse"}
+        },
+        "Artikel": {
+            1: {"___ Hund": "der", "___ Katze": "die"},
+            4: {"___ Auto": "das", "___ Blume": "die"},
+            7: {"___ Mädchen": "das", "___ Lehrer": "der"}
+        },
+        "Satzglieder": {
+            4: {"Ich ___ den Ball": "werfe"},
+            7: {"Der Hund ___ laut": "bellt"}
+        },
+        "Wortarten": {
+            2: {"laufen": "Verb", "Haus": "Nomen"},
+            5: {"schön": "Adjektiv", "lesen": "Verb"},
+            8: {"weil": "Konjunktion", "schnell": "Adjektiv"}
+        }
     }
-    a = []
-    for _ in range(anzahl):
-        f, l = random.choice(list(daten[thema].items()))
-        a.append((f, l))
-    return a
 
-def englisch_aufgaben(thema, anzahl):
+    stufe = max(k for k in daten[thema] if klasse >= k)
+    pool = daten[thema][stufe]
+
+    return [random.choice(list(pool.items())) for _ in range(anzahl)]
+
+def englisch_aufgaben(thema, klasse, anzahl):
     daten = {
-        "Vokabeln": {"Hund": "dog", "Katze": "cat"},
-        "Zeitformen": {"I go (Past)": "went", "I see (Past)": "saw"}
+        "Vokabeln": {
+            1: {"Hund": "dog", "Katze": "cat"},
+            4: {"Haus": "house", "Apfel": "apple"},
+            7: {"denken": "think", "laufen": "run"}
+        },
+        "Zeitformen": {
+            5: {"I go (Past)": "went", "I see (Past)": "saw"},
+            8: {"I have eaten (Infinitive)": "eat"}
+        }
     }
-    a = []
-    for _ in range(anzahl):
-        f, l = random.choice(list(daten[thema].items()))
-        a.append((f, l))
-    return a
+
+    stufe = max(k for k in daten[thema] if klasse >= k)
+    pool = daten[thema][stufe]
+
+    return [random.choice(list(pool.items())) for _ in range(anzahl)]
 
 # ============================================================
 # ======================== SIDEBAR ===========================
 # ============================================================
 
-st.sidebar.header("⚙️ Einstellungen")
-st.sidebar.write(f"👤 {st.session_state.user}")
+st.sidebar.markdown("## ⚙️ Lern-Einstellungen")
+st.sidebar.write(f"👤 **{st.session_state.user}**")
+st.sidebar.divider()
 
 fach = st.sidebar.radio(
-    "Fach wählen",
+    "📘 Fach",
     ["Mathe", "Deutsch", "Englisch"]
+)
+
+klasse = st.sidebar.slider(
+    "🎓 Klassenstufe",
+    1, 10, 3
 )
 
 unterthemen = {
@@ -138,16 +174,25 @@ unterthemen = {
     "Englisch": ["Vokabeln", "Zeitformen"]
 }
 
-thema = st.sidebar.selectbox("Unterthema", unterthemen[fach])
-anzahl = st.sidebar.slider("Anzahl Aufgaben", 1, 10, 5)
+thema = st.sidebar.selectbox(
+    "📂 Unterthema",
+    unterthemen[fach]
+)
 
-if st.sidebar.button("🚀 Quiz starten"):
+anzahl = st.sidebar.slider(
+    "🧮 Anzahl Aufgaben",
+    1, 10, 5
+)
+
+st.sidebar.divider()
+
+if st.sidebar.button("🚀 Quiz starten", use_container_width=True):
     if fach == "Mathe":
-        st.session_state.aufgaben = mathe_aufgaben(thema, anzahl)
+        st.session_state.aufgaben = mathe_aufgaben(thema, klasse, anzahl)
     elif fach == "Deutsch":
-        st.session_state.aufgaben = deutsch_aufgaben(thema, anzahl)
+        st.session_state.aufgaben = deutsch_aufgaben(thema, klasse, anzahl)
     else:
-        st.session_state.aufgaben = englisch_aufgaben(thema, anzahl)
+        st.session_state.aufgaben = englisch_aufgaben(thema, klasse, anzahl)
 
     st.session_state.index = 0
     st.session_state.fertig = False
@@ -167,23 +212,14 @@ if st.session_state.aufgaben and not st.session_state.fertig:
 
     col1, col2 = st.columns(2)
     with col1:
-        if st.button("Antwort prüfen"):
+        if st.button("Antwort prüfen", use_container_width=True):
             if antwort.strip().lower() == loesung.lower():
-                st.success("Richtig ✅")
+                st.success("✅ Richtig!")
             else:
-                st.error(f"Falsch ❌ – Lösung: {loesung}")
-
-            progress.setdefault(st.session_state.user, []).append({
-                "fach": fach,
-                "thema": thema,
-                "frage": frage,
-                "antwort": antwort,
-                "lösung": loesung
-            })
-            save_json(PROGRESS_FILE, progress)
+                st.error(f"❌ Falsch – Lösung: {loesung}")
 
     with col2:
-        if st.button("Nächste Aufgabe ➡️"):
+        if st.button("➡️ Weiter", use_container_width=True):
             st.session_state.index += 1
             if st.session_state.index >= len(st.session_state.aufgaben):
                 st.session_state.fertig = True
@@ -191,7 +227,7 @@ if st.session_state.aufgaben and not st.session_state.fertig:
 
 elif st.session_state.fertig:
     st.success("🎉 Quiz abgeschlossen!")
-    if st.button("🔁 Neues Quiz"):
+    if st.button("🔁 Neues Quiz starten"):
         st.session_state.aufgaben = []
         st.session_state.fertig = False
         st.rerun()
