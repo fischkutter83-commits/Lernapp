@@ -3,6 +3,7 @@ import random
 import json
 import os
 import pandas as pd
+import matplotlib.pyplot as plt
 
 # ============================================================
 # ===================== GRUNDEINSTELLUNGEN ===================
@@ -44,7 +45,8 @@ defaults = {
     "aufgaben": [],
     "index": 0,
     "fertig": False,
-    "show_chart": False,
+    "show_points": False,
+    "show_pie": False,
     "sterne": 0
 }
 for k, v in defaults.items():
@@ -88,14 +90,14 @@ if st.session_state.user is None:
 # ============================================================
 
 def unique_tasks(generator, count):
-    tasks = set()
-    result = []
-    while len(result) < count:
+    seen = set()
+    tasks = []
+    while len(tasks) < count:
         q, a = generator()
-        if q not in tasks:
-            tasks.add(q)
-            result.append((q, a))
-    return result
+        if q not in seen:
+            seen.add(q)
+            tasks.append((q, a))
+    return tasks
 
 def mathe_aufgaben(thema, klasse, anzahl):
     max_zahl = 20 if klasse <= 3 else 100 if klasse <= 6 else 500
@@ -119,34 +121,28 @@ def mathe_aufgaben(thema, klasse, anzahl):
 
     return unique_tasks(gen, anzahl)
 
-def deutsch_aufgaben(thema, klasse, anzahl):
-    daten = {
-        "Rechtschreibung": ["Hant", "Fahrrat", "Interresse", "wierklich"],
-        "Artikel": ["___ Hund", "___ Katze", "___ Auto", "___ Blume"],
-        "Satzglieder": ["Ich ___ den Ball", "Der Hund ___ laut"],
-        "Wortarten": ["laufen", "schön", "weil", "Haus"]
-    }
-    loesungen = {
-        "Hant": "Hand", "Fahrrat": "Fahrrad", "Interresse": "Interesse", "wierklich": "wirklich",
-        "___ Hund": "der", "___ Katze": "die", "___ Auto": "das", "___ Blume": "die",
-        "Ich ___ den Ball": "werfe", "Der Hund ___ laut": "bellt",
-        "laufen": "Verb", "schön": "Adjektiv", "weil": "Konjunktion", "Haus": "Nomen"
+def deutsch_aufgaben(thema, anzahl):
+    pool = {
+        "Rechtschreibung": {"Hant": "Hand", "Fahrrat": "Fahrrad", "Interresse": "Interesse"},
+        "Artikel": {"___ Hund": "der", "___ Katze": "die", "___ Auto": "das"},
+        "Satzglieder": {"Ich ___ den Ball": "werfe", "Der Hund ___ laut": "bellt"},
+        "Wortarten": {"laufen": "Verb", "schön": "Adjektiv", "weil": "Konjunktion"}
     }
 
     def gen():
-        q = random.choice(daten[thema])
-        return q, loesungen[q]
+        q, a = random.choice(list(pool[thema].items()))
+        return q, a
 
     return unique_tasks(gen, anzahl)
 
-def englisch_aufgaben(thema, klasse, anzahl):
-    daten = {
-        "Vokabeln": {"Hund": "dog", "Katze": "cat", "Apfel": "apple", "denken": "think"},
-        "Zeitformen": {"I go (Past)": "went", "I see (Past)": "saw", "I have eaten": "eat"}
+def englisch_aufgaben(thema, anzahl):
+    pool = {
+        "Vokabeln": {"Hund": "dog", "Katze": "cat", "Apfel": "apple"},
+        "Zeitformen": {"I go (Past)": "went", "I see (Past)": "saw"}
     }
 
     def gen():
-        q, a = random.choice(list(daten[thema].items()))
+        q, a = random.choice(list(pool[thema].items()))
         return q, a
 
     return unique_tasks(gen, anzahl)
@@ -178,14 +174,20 @@ if st.sidebar.button("🚀 Quiz starten", use_container_width=True):
     if fach == "Mathe":
         st.session_state.aufgaben = mathe_aufgaben(thema, klasse, anzahl)
     elif fach == "Deutsch":
-        st.session_state.aufgaben = deutsch_aufgaben(thema, klasse, anzahl)
+        st.session_state.aufgaben = deutsch_aufgaben(thema, anzahl)
     else:
-        st.session_state.aufgaben = englisch_aufgaben(thema, klasse, anzahl)
+        st.session_state.aufgaben = englisch_aufgaben(thema, anzahl)
 
     st.session_state.index = 0
     st.session_state.fertig = False
     st.session_state.sterne_quiz = 0
     st.rerun()
+
+if st.sidebar.button("📈 Punkte anzeigen", use_container_width=True):
+    st.session_state.show_points = not st.session_state.show_points
+
+if st.sidebar.button("📊 Lösungen anzeigen", use_container_width=True):
+    st.session_state.show_pie = not st.session_state.show_pie
 
 # ============================================================
 # ===================== QUIZ ================================
@@ -201,7 +203,9 @@ if st.session_state.aufgaben and not st.session_state.fertig:
     antwort = st.text_input("Deine Antwort")
 
     if st.button("Antwort prüfen", use_container_width=True):
-        if antwort.strip().lower() == loesung.lower():
+        richtig = antwort.strip().lower() == loesung.lower()
+
+        if richtig:
             st.success("✅ Richtig! ⭐")
             st.session_state.sterne_quiz += 1
             st.session_state.sterne += 1
@@ -209,6 +213,11 @@ if st.session_state.aufgaben and not st.session_state.fertig:
             save_json(USERS_FILE, users)
         else:
             st.error("❌ Falsch")
+
+        progress.setdefault(st.session_state.user, []).append({
+            "richtig": richtig
+        })
+        save_json(PROGRESS_FILE, progress)
 
     if st.button("➡️ Nächste Aufgabe", use_container_width=True):
         st.session_state.index += 1
@@ -222,3 +231,34 @@ elif st.session_state.fertig:
         st.session_state.aufgaben = []
         st.session_state.fertig = False
         st.rerun()
+
+# ============================================================
+# ===================== DIAGRAMME ============================
+# ============================================================
+
+if st.session_state.show_points:
+    st.markdown("---")
+    st.header("📈 Gesamtpunkte")
+    st.write(f"⭐ **Gesamtsterne:** {st.session_state.sterne}")
+
+if st.session_state.show_pie:
+    st.markdown("---")
+    st.header("📊 Richtige vs. Falsche Antworten")
+
+    daten = progress.get(st.session_state.user, [])
+    if daten:
+        richtig = sum(1 for d in daten if d["richtig"])
+        falsch = sum(1 for d in daten if not d["richtig"])
+
+        fig, ax = plt.subplots()
+        ax.pie(
+            [richtig, falsch],
+            labels=["Richtig", "Falsch"],
+            colors=["green", "red"],
+            autopct="%1.0f%%",
+            startangle=90
+        )
+        ax.axis("equal")
+        st.pyplot(fig)
+    else:
+        st.info("Noch keine Daten vorhanden.")
