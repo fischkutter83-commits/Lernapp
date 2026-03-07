@@ -11,7 +11,6 @@ USERS_FILE = "users.json"
 PROGRESS_FILE = "progress.json"
 
 # ================= JSON =================
-
 def load_json(file):
     if not os.path.exists(file):
         with open(file, "w") as f:
@@ -30,7 +29,6 @@ users = load_json(USERS_FILE)
 progress = load_json(PROGRESS_FILE)
 
 # ================= SESSION =================
-
 defaults = {
     "user": None,
     "aufgaben": [],
@@ -51,16 +49,13 @@ for k, v in defaults.items():
         st.session_state[k] = v
 
 # ================= LOGIN =================
-
 if st.session_state.user is None:
-
     st.title("📚 Lern-App Login")
 
     col1, col2 = st.columns(2)
 
     with col1:
         st.subheader("Login")
-
         username = st.text_input("Benutzername")
         password = st.text_input("Passwort", type="password")
 
@@ -77,7 +72,6 @@ if st.session_state.user is None:
 
     with col2:
         st.subheader("Registrieren")
-
         new_user = st.text_input("Neuer Benutzername")
         new_pw = st.text_input("Neues Passwort", type="password")
 
@@ -92,7 +86,6 @@ if st.session_state.user is None:
     st.stop()
 
 # ================= TOP BAR =================
-
 col1, col2, col3, col4 = st.columns([3,1,1,1])
 
 with col1:
@@ -110,7 +103,6 @@ with col4:
         st.rerun()
 
 # ================= LEVEL SYSTEM =================
-
 def add_xp(amount):
     st.session_state.xp += amount
     if st.session_state.xp >= 10:
@@ -119,35 +111,36 @@ def add_xp(amount):
         st.success("🎉 Level Up!")
 
 # ================= KLASSENSTUFE =================
-
 st.session_state.klasse = st.slider("🎓 Klassenstufe", 1, 10, st.session_state.klasse)
 
 # ================= AUFGABEN =================
-
 def mathe_aufgaben(thema, klasse, anzahl):
-    max_zahl = 20 if klasse <= 3 else 100 if klasse <= 6 else 500
     tasks = []
     for _ in range(anzahl):
         if thema == "Addition":
+            max_zahl = 10*klasse if klasse <=5 else 50*klasse
             a = random.randint(1, max_zahl)
             b = random.randint(1, max_zahl)
             tasks.append((f"{a} + {b}", str(a + b)))
-        if thema == "Subtraktion":
+
+        elif thema == "Subtraktion":
+            max_zahl = 10*klasse if klasse <=5 else 50*klasse
             a = random.randint(1, max_zahl)
-            b = random.randint(1, max_zahl)
+            b = random.randint(1, a)
             tasks.append((f"{a} - {b}", str(a - b)))
-        if thema == "Multiplikation":
-            a = random.randint(2, 12)
-            b = random.randint(2, 12)
+
+        elif thema == "Multiplikation" and klasse >= 2:
+            a = random.randint(2, 5 + klasse)
+            b = random.randint(2, 5 + klasse)
             tasks.append((f"{a} × {b}", str(a * b)))
     return tasks
 
 def deutsch_aufgaben(thema, klasse, anzahl):
     daten = {
-        "Artikel": {"___ Hund":"der","___ Katze":"die","___ Auto":"das"},
-        "Wortarten": {"laufen":"Verb","Haus":"Nomen","schnell":"Adjektiv"},
-        "Grammatik": {"Ich ___ zur Schule":"gehe","Wir ___ Fußball":"spielen"},
-        "Zeitformen": {"ich gehe (Vergangenheit)":"ging","ich esse (Vergangenheit)":"aß"}
+        "Artikel": {f"___ Hund":"der", f"___ Katze":"die", f"___ Auto":"das", "___ Baum":"der", "___ Blume":"die"},
+        "Wortarten": {"laufen":"Verb","Haus":"Nomen","schnell":"Adjektiv","spielen":"Verb","schön":"Adjektiv"},
+        "Grammatik": {f"Ich ___ zur Schule":"gehe","Wir ___ Fußball":"spielen","Er ___ im Garten":"arbeitet"},
+        "Zeitformen": {f"ich gehe (Vergangenheit)":"ging","ich esse (Vergangenheit)":"aß","wir spielen (Vergangenheit)":"spielten"}
     }
     pool = list(daten[thema].items())
     random.shuffle(pool)
@@ -155,18 +148,16 @@ def deutsch_aufgaben(thema, klasse, anzahl):
 
 def englisch_aufgaben(thema, klasse, anzahl):
     daten = {
-        "Vocabulary":{"Hund":"dog","Katze":"cat","Haus":"house"},
-        "Grammar":{"I ___ fast":"run","She ___ fast":"runs"},
-        "Tenses":{"go (past)":"went","see (past)":"saw"}
+        "Vocabulary":{"Hund":"dog","Katze":"cat","Haus":"house","Baum":"tree","Blume":"flower"},
+        "Grammar":{"I ___ fast":"run","She ___ fast":"runs","They ___ happy":"are"},
+        "Tenses":{"go (past)":"went","see (past)":"saw","eat (past)":"ate"}
     }
     pool = list(daten[thema].items())
     random.shuffle(pool)
     return pool[:anzahl]
 
 # ================= EINSTELLUNGEN =================
-
 st.subheader("⚙️ Einstellungen")
-
 col1, col2, col3 = st.columns(3)
 
 with col1:
@@ -196,20 +187,17 @@ if st.button("🚀 Quiz starten"):
     st.session_state.sterne_quiz = 0
 
 # ================= QUIZ =================
-
 if st.session_state.aufgaben and not st.session_state.fertig:
-
     frage, loesung = st.session_state.aufgaben[st.session_state.index]
 
     st.subheader(f"Aufgabe {st.session_state.index+1}")
     st.write(f"### {frage}")
 
-    antwort = st.text_input("Antwort")
+    antwort = st.text_input("Antwort", key=f"antwort_{st.session_state.index}")
 
     col1, col2 = st.columns(2)
-
     with col1:
-        if st.button("Antwort prüfen"):
+        if st.button("Antwort prüfen", key=f"check_{st.session_state.index}"):
             if antwort.lower() == loesung.lower():
                 st.success("Richtig ⭐")
                 st.session_state.sterne += 1
@@ -219,45 +207,31 @@ if st.session_state.aufgaben and not st.session_state.fertig:
                 st.error(f"Falsch! Richtige Antwort: {loesung}")
 
     with col2:
-        if st.button("Nächste"):
+        if st.button("Nächste", key=f"next_{st.session_state.index}"):
             st.session_state.index += 1
             if st.session_state.index >= len(st.session_state.aufgaben):
                 st.session_state.fertig = True
 
 # ================= QUIZENDE =================
-
 if st.session_state.fertig:
-
     st.success(f"Quiz beendet ⭐ {st.session_state.sterne_quiz}")
-
     date = str(datetime.date.today())
-
     if st.session_state.user not in progress:
         progress[st.session_state.user] = {}
-
     progress[st.session_state.user][date] = st.session_state.sterne_quiz
-
     save_json(PROGRESS_FILE, progress)
 
 # ================= FORTSCHRITT =================
-
 st.subheader("📈 Lernfortschritt")
-
 if st.session_state.user in progress:
-
     data = progress[st.session_state.user]
-
     df = pd.DataFrame(list(data.items()), columns=["Datum", "Sterne"])
-
     col_chart, col_space = st.columns([1,2])
-
     with col_chart:
         st.line_chart(df.set_index("Datum"))
 
 # ================= SPIELE SHOP =================
-
 st.subheader("🎮 Spiele-Shop")
-
 col1, col2, col3 = st.columns(3)
 
 with col1:
@@ -285,57 +259,37 @@ with col3:
                 st.session_state.spiel3 = True
 
 # ================= SPIEL 1 =================
-
 if st.session_state.spiel1:
-
     st.subheader("🎯 Zahlen raten")
-
     if "zahl" not in st.session_state:
         st.session_state.zahl = random.randint(1, 20)
-
-    guess = st.number_input("Rate die Zahl 1-20", 1, 20)
-
+    guess = st.number_input("Rate die Zahl 1-20", 1, 20, key="guess1")
     if st.button("Raten"):
-
         if guess == st.session_state.zahl:
             st.success("Richtig +2⭐")
             st.session_state.sterne += 2
             st.session_state.zahl = random.randint(1, 20)
-
         elif guess < st.session_state.zahl:
             st.info("Zu klein")
-
         else:
             st.info("Zu groß")
 
 # ================= SPIEL 2 =================
-
 if st.session_state.spiel2:
-
     st.subheader("🎲 Würfelspiel")
-
     if st.button("Würfeln"):
-
         roll = random.randint(1,6)
-
         st.write("Du hast gewürfelt:", roll)
-
         if roll == 6:
             st.success("Jackpot +3⭐")
             st.session_state.sterne += 3
 
 # ================= SPIEL 3 =================
-
 if st.session_state.spiel3:
-
     st.subheader("⚡ Reaktionsspiel")
-
     if st.button("Start"):
-
         number = random.randint(1,5)
-
-        guess = st.number_input("Drücke schnell die Zahl",1,5)
-
+        guess = st.number_input("Drücke schnell die Zahl",1,5,key="guess3")
         if guess == number:
             st.success("Schnell! +4⭐")
             st.session_state.sterne += 4
