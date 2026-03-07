@@ -1,4 +1,3 @@
-# Streamlit Lern-App (erweitert)
 
 ```python
 import streamlit as st
@@ -276,3 +275,4 @@ if st.session_state.spiel_freigeschaltet:
         else:
             st.info("Zu groß")
 ```
+
