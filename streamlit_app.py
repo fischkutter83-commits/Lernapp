@@ -53,7 +53,6 @@ if st.session_state.user is None:
     st.title("📚 Lern-App Login")
 
     col1, col2 = st.columns(2)
-
     with col1:
         st.subheader("Login")
         username = st.text_input("Benutzername")
@@ -87,16 +86,12 @@ if st.session_state.user is None:
 
 # ================= TOP BAR =================
 col1, col2, col3, col4 = st.columns([3,1,1,1])
-
 with col1:
     st.title("📚 Lern-App")
-
 with col2:
     st.metric("⭐ Sterne", st.session_state.sterne)
-
 with col3:
     st.metric("🏆 Level", st.session_state.level)
-
 with col4:
     if st.button("Logout"):
         st.session_state.user = None
@@ -121,26 +116,32 @@ def mathe_aufgaben(thema, klasse, anzahl):
             max_zahl = 10*klasse if klasse <=5 else 50*klasse
             a = random.randint(1, max_zahl)
             b = random.randint(1, max_zahl)
-            tasks.append((f"{a} + {b}", str(a + b)))
+            frage = f"Was ist {a} plus {b}?"
+            tasks.append((frage, str(a+b)))
 
         elif thema == "Subtraktion":
             max_zahl = 10*klasse if klasse <=5 else 50*klasse
             a = random.randint(1, max_zahl)
             b = random.randint(1, a)
-            tasks.append((f"{a} - {b}", str(a - b)))
+            frage = f"Berechne {a} minus {b}."
+            tasks.append((frage, str(a-b)))
 
         elif thema == "Multiplikation" and klasse >= 2:
             a = random.randint(2, 5 + klasse)
             b = random.randint(2, 5 + klasse)
-            tasks.append((f"{a} × {b}", str(a * b)))
+            frage = f"Wie viel ist {a} mal {b}?"
+            tasks.append((frage, str(a*b)))
     return tasks
 
 def deutsch_aufgaben(thema, klasse, anzahl):
     daten = {
-        "Artikel": {f"___ Hund":"der", f"___ Katze":"die", f"___ Auto":"das", "___ Baum":"der", "___ Blume":"die"},
-        "Wortarten": {"laufen":"Verb","Haus":"Nomen","schnell":"Adjektiv","spielen":"Verb","schön":"Adjektiv"},
-        "Grammatik": {f"Ich ___ zur Schule":"gehe","Wir ___ Fußball":"spielen","Er ___ im Garten":"arbeitet"},
-        "Zeitformen": {f"ich gehe (Vergangenheit)":"ging","ich esse (Vergangenheit)":"aß","wir spielen (Vergangenheit)":"spielten"}
+        "Artikel": {f"Fülle ein: ___ Hund":"der", f"Fülle ein: ___ Katze":"die", f"Fülle ein: ___ Auto":"das",
+                    "Fülle ein: ___ Baum":"der", "Fülle ein: ___ Blume":"die"},
+        "Wortarten": {"Bestimme die Wortart: laufen":"Verb","Bestimme die Wortart: Haus":"Nomen","Bestimme die Wortart: schnell":"Adjektiv",
+                      "Bestimme die Wortart: spielen":"Verb","Bestimme die Wortart: schön":"Adjektiv"},
+        "Grammatik": {"Setze ein: Ich ___ zur Schule":"gehe","Setze ein: Wir ___ Fußball":"spielen","Setze ein: Er ___ im Garten":"arbeitet"},
+        "Zeitformen": {"Schreibe in Vergangenheit: ich gehe":"ging","Schreibe in Vergangenheit: ich esse":"aß",
+                       "Schreibe in Vergangenheit: wir spielen":"spielten"}
     }
     pool = list(daten[thema].items())
     random.shuffle(pool)
@@ -148,9 +149,10 @@ def deutsch_aufgaben(thema, klasse, anzahl):
 
 def englisch_aufgaben(thema, klasse, anzahl):
     daten = {
-        "Vocabulary":{"Hund":"dog","Katze":"cat","Haus":"house","Baum":"tree","Blume":"flower"},
-        "Grammar":{"I ___ fast":"run","She ___ fast":"runs","They ___ happy":"are"},
-        "Tenses":{"go (past)":"went","see (past)":"saw","eat (past)":"ate"}
+        "Vocabulary":{"Translate to English: Hund":"dog","Translate to English: Katze":"cat","Translate to English: Haus":"house",
+                      "Translate to English: Baum":"tree","Translate to English: Blume":"flower"},
+        "Grammar":{"Fill in: I ___ fast":"run","Fill in: She ___ fast":"runs","Fill in: They ___ happy":"are"},
+        "Tenses":{"Write past tense: go":"went","Write past tense: see":"saw","Write past tense: eat":"ate"}
     }
     pool = list(daten[thema].items())
     random.shuffle(pool)
@@ -159,10 +161,8 @@ def englisch_aufgaben(thema, klasse, anzahl):
 # ================= EINSTELLUNGEN =================
 st.subheader("⚙️ Einstellungen")
 col1, col2, col3 = st.columns(3)
-
 with col1:
     fach = st.selectbox("Fach", ["Mathe", "Deutsch", "Englisch"])
-
 with col2:
     themen = {
         "Mathe": ["Addition", "Subtraktion", "Multiplikation"],
@@ -170,11 +170,11 @@ with col2:
         "Englisch": ["Tenses", "Grammar", "Vocabulary"],
     }
     thema = st.selectbox("Thema", themen[fach])
-
 with col3:
     anzahl = st.slider("Aufgaben", 1, 10, 5)
 
 if st.button("🚀 Quiz starten"):
+    # Aufgaben bei jedem Start neu generieren
     if fach == "Mathe":
         st.session_state.aufgaben = mathe_aufgaben(thema, st.session_state.klasse, anzahl)
     elif fach == "Deutsch":
@@ -189,23 +189,20 @@ if st.button("🚀 Quiz starten"):
 # ================= QUIZ =================
 if st.session_state.aufgaben and not st.session_state.fertig:
     frage, loesung = st.session_state.aufgaben[st.session_state.index]
-
     st.subheader(f"Aufgabe {st.session_state.index+1}")
     st.write(f"### {frage}")
-
     antwort = st.text_input("Antwort", key=f"antwort_{st.session_state.index}")
 
     col1, col2 = st.columns(2)
     with col1:
         if st.button("Antwort prüfen", key=f"check_{st.session_state.index}"):
-            if antwort.lower() == loesung.lower():
+            if antwort.strip().lower() == loesung.lower():
                 st.success("Richtig ⭐")
                 st.session_state.sterne += 1
                 st.session_state.sterne_quiz += 1
                 add_xp(2)
             else:
                 st.error(f"Falsch! Richtige Antwort: {loesung}")
-
     with col2:
         if st.button("Nächste", key=f"next_{st.session_state.index}"):
             st.session_state.index += 1
@@ -229,67 +226,3 @@ if st.session_state.user in progress:
     col_chart, col_space = st.columns([1,2])
     with col_chart:
         st.line_chart(df.set_index("Datum"))
-
-# ================= SPIELE SHOP =================
-st.subheader("🎮 Spiele-Shop")
-col1, col2, col3 = st.columns(3)
-
-with col1:
-    st.write("🎯 Zahlen raten")
-    if not st.session_state.spiel1:
-        if st.button("Kaufen ⭐10"):
-            if st.session_state.sterne >= 10:
-                st.session_state.sterne -= 10
-                st.session_state.spiel1 = True
-
-with col2:
-    st.write("🎲 Würfelspiel")
-    if not st.session_state.spiel2:
-        if st.button("Kaufen ⭐15"):
-            if st.session_state.sterne >= 15:
-                st.session_state.sterne -= 15
-                st.session_state.spiel2 = True
-
-with col3:
-    st.write("🧠 Reaktionsspiel")
-    if not st.session_state.spiel3:
-        if st.button("Kaufen ⭐20"):
-            if st.session_state.sterne >= 20:
-                st.session_state.sterne -= 20
-                st.session_state.spiel3 = True
-
-# ================= SPIEL 1 =================
-if st.session_state.spiel1:
-    st.subheader("🎯 Zahlen raten")
-    if "zahl" not in st.session_state:
-        st.session_state.zahl = random.randint(1, 20)
-    guess = st.number_input("Rate die Zahl 1-20", 1, 20, key="guess1")
-    if st.button("Raten"):
-        if guess == st.session_state.zahl:
-            st.success("Richtig +2⭐")
-            st.session_state.sterne += 2
-            st.session_state.zahl = random.randint(1, 20)
-        elif guess < st.session_state.zahl:
-            st.info("Zu klein")
-        else:
-            st.info("Zu groß")
-
-# ================= SPIEL 2 =================
-if st.session_state.spiel2:
-    st.subheader("🎲 Würfelspiel")
-    if st.button("Würfeln"):
-        roll = random.randint(1,6)
-        st.write("Du hast gewürfelt:", roll)
-        if roll == 6:
-            st.success("Jackpot +3⭐")
-            st.session_state.sterne += 3
-
-# ================= SPIEL 3 =================
-if st.session_state.spiel3:
-    st.subheader("⚡ Reaktionsspiel")
-    if st.button("Start"):
-        number = random.randint(1,5)
-        guess = st.number_input("Drücke schnell die Zahl",1,5,key="guess3")
-        if guess == number:
-            st.success("Schnell! +4⭐")
-            st.session_state.sterne += 4
