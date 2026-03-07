@@ -1,4 +1,4 @@
-# Streamlit Lern-App (verbesserte Version)
+# Streamlit Lern-App (Gamified Version)
 
 ```python
 import streamlit as st
@@ -46,7 +46,11 @@ defaults = {
     "sterne": 0,
     "sterne_quiz": 0,
     "klasse": 3,
-    "spiel_freigeschaltet": False,
+    "level": 1,
+    "xp": 0,
+    "spiel1": False,
+    "spiel2": False,
+    "spiel3": False,
 }
 
 for k, v in defaults.items():
@@ -73,6 +77,8 @@ if st.session_state.user is None:
                 st.session_state.user = username
                 st.session_state.sterne = users[username].get("sterne", 0)
                 st.session_state.klasse = users[username].get("klasse", 3)
+                st.session_state.level = users[username].get("level", 1)
+                st.session_state.xp = users[username].get("xp", 0)
                 st.rerun()
             else:
                 st.error("Falsche Daten")
@@ -85,7 +91,7 @@ if st.session_state.user is None:
 
         if st.button("Account erstellen"):
             if new_user not in users:
-                users[new_user] = {"password": new_pw, "sterne": 0, "klasse": 3}
+                users[new_user] = {"password": new_pw, "sterne": 0, "klasse": 3, "level":1, "xp":0}
                 save_json(USERS_FILE, users)
                 st.success("Account erstellt")
             else:
@@ -96,18 +102,32 @@ if st.session_state.user is None:
 
 # ================= TOP BAR =================
 
-col_top1, col_top2, col_top3 = st.columns([2,2,1])
+col1, col2, col3, col4 = st.columns([3,1,1,1])
 
-with col_top1:
+with col1:
     st.title("📚 Lern-App")
 
-with col_top2:
+with col2:
     st.metric("⭐ Sterne", st.session_state.sterne)
 
-with col_top3:
+with col3:
+    st.metric("🏆 Level", st.session_state.level)
+
+with col4:
     if st.button("Logout"):
         st.session_state.user = None
         st.rerun()
+
+
+# ================= LEVEL SYSTEM =================
+
+def add_xp(amount):
+    st.session_state.xp += amount
+
+    if st.session_state.xp >= 10:
+        st.session_state.level += 1
+        st.session_state.xp = 0
+        st.success("🎉 Level Up!")
 
 
 # ================= KLASSENSTUFE =================
@@ -115,7 +135,7 @@ with col_top3:
 st.session_state.klasse = st.slider("🎓 Klassenstufe", 1, 10, st.session_state.klasse)
 
 
-# ================= AUFGABENGENERATOREN =================
+# ================= AUFGABEN =================
 
 # MATHE
 
@@ -150,25 +170,10 @@ def mathe_aufgaben(thema, klasse, anzahl):
 def deutsch_aufgaben(thema, klasse, anzahl):
 
     daten = {
-        "Artikel": {
-            "___ Hund": "der",
-            "___ Katze": "die",
-            "___ Auto": "das",
-            "___ Blume": "die",
-        },
-        "Wortarten": {
-            "laufen": "Verb",
-            "Haus": "Nomen",
-            "schnell": "Adjektiv",
-        },
-        "Grammatik": {
-            "Ich ___ zur Schule": "gehe",
-            "Wir ___ Fußball": "spielen",
-        },
-        "Zeitformen": {
-            "ich gehe (Vergangenheit)": "ging",
-            "ich esse (Vergangenheit)": "aß",
-        },
+        "Artikel": {"___ Hund":"der","___ Katze":"die","___ Auto":"das"},
+        "Wortarten": {"laufen":"Verb","Haus":"Nomen","schnell":"Adjektiv"},
+        "Grammatik": {"Ich ___ zur Schule":"gehe","Wir ___ Fußball":"spielen"},
+        "Zeitformen": {"ich gehe (Vergangenheit)":"ging","ich esse (Vergangenheit)":"aß"}
     }
 
     pool = list(daten[thema].items())
@@ -182,19 +187,9 @@ def deutsch_aufgaben(thema, klasse, anzahl):
 def englisch_aufgaben(thema, klasse, anzahl):
 
     daten = {
-        "Vocabulary": {
-            "Hund": "dog",
-            "Katze": "cat",
-            "Haus": "house",
-        },
-        "Grammar": {
-            "I ___ a book": "read",
-            "She ___ fast": "runs",
-        },
-        "Tenses": {
-            "go (past)": "went",
-            "see (past)": "saw",
-        },
+        "Vocabulary":{"Hund":"dog","Katze":"cat","Haus":"house"},
+        "Grammar":{"I ___ fast":"run","She ___ fast":"runs"},
+        "Tenses":{"go (past)":"went","see (past)":"saw"}
     }
 
     pool = list(daten[thema].items())
@@ -261,6 +256,7 @@ if st.session_state.aufgaben and not st.session_state.fertig:
                 st.success("Richtig ⭐")
                 st.session_state.sterne += 1
                 st.session_state.sterne_quiz += 1
+                add_xp(2)
             else:
                 st.error(f"Falsch! Richtige Antwort: {loesung}")
 
@@ -288,7 +284,7 @@ if st.session_state.fertig:
     save_json(PROGRESS_FILE, progress)
 
 
-# ================= FORTSCHRITT (KLEIN & SCHÖN) =================
+# ================= FORTSCHRITT =================
 
 st.subheader("📈 Lernfortschritt")
 
@@ -304,24 +300,40 @@ if st.session_state.user in progress:
         st.line_chart(df.set_index("Datum"))
 
 
-# ================= MINISPIEL =================
+# ================= SPIELE SHOP =================
 
-st.subheader("🎮 Minispiel-Shop")
+st.subheader("🎮 Spiele-Shop")
 
-if not st.session_state.spiel_freigeschaltet:
+col1, col2, col3 = st.columns(3)
 
-    st.write("Preis: ⭐ 10 Sterne")
+with col1:
+    st.write("🎯 Zahlen raten")
+    if not st.session_state.spiel1:
+        if st.button("Kaufen ⭐10"):
+            if st.session_state.sterne >= 10:
+                st.session_state.sterne -= 10
+                st.session_state.spiel1 = True
 
-    if st.button("Spiel kaufen"):
+with col2:
+    st.write("🎲 Würfelspiel")
+    if not st.session_state.spiel2:
+        if st.button("Kaufen ⭐15"):
+            if st.session_state.sterne >= 15:
+                st.session_state.sterne -= 15
+                st.session_state.spiel2 = True
 
-        if st.session_state.sterne >= 10:
-            st.session_state.sterne -= 10
-            st.session_state.spiel_freigeschaltet = True
-        else:
-            st.error("Nicht genug Sterne")
+with col3:
+    st.write("🧠 Reaktionsspiel")
+    if not st.session_state.spiel3:
+        if st.button("Kaufen ⭐20"):
+            if st.session_state.sterne >= 20:
+                st.session_state.sterne -= 20
+                st.session_state.spiel3 = True
 
 
-if st.session_state.spiel_freigeschaltet:
+# ================= SPIEL 1 =================
+
+if st.session_state.spiel1:
 
     st.subheader("🎯 Zahlen raten")
 
@@ -333,7 +345,7 @@ if st.session_state.spiel_freigeschaltet:
     if st.button("Raten"):
 
         if guess == st.session_state.zahl:
-            st.success("Richtig! +2 Sterne ⭐")
+            st.success("Richtig +2⭐")
             st.session_state.sterne += 2
             st.session_state.zahl = random.randint(1, 20)
 
@@ -342,4 +354,38 @@ if st.session_state.spiel_freigeschaltet:
 
         else:
             st.info("Zu groß")
+
+
+# ================= SPIEL 2 =================
+
+if st.session_state.spiel2:
+
+    st.subheader("🎲 Würfelspiel")
+
+    if st.button("Würfeln"):
+
+        roll = random.randint(1,6)
+
+        st.write("Du hast gewürfelt:", roll)
+
+        if roll == 6:
+            st.success("Jackpot +3⭐")
+            st.session_state.sterne += 3
+
+
+# ================= SPIEL 3 =================
+
+if st.session_state.spiel3:
+
+    st.subheader("⚡ Reaktionsspiel")
+
+    if st.button("Start"):
+
+        number = random.randint(1,5)
+
+        guess = st.number_input("Drücke schnell die Zahl",1,5)
+
+        if guess == number:
+            st.success("Schnell! +4⭐")
+            st.session_state.sterne += 4
 ```
