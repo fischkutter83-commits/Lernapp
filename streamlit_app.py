@@ -1,16 +1,17 @@
+# Streamlit Lern-App (verbesserte Version)
+
+```python
 import streamlit as st
 import random
 import json
 import os
 import pandas as pd
 import datetime
-import matplotlib.pyplot as plt
 
 st.set_page_config(page_title="Lern-App", layout="wide")
 
 USERS_FILE = "users.json"
 PROGRESS_FILE = "progress.json"
-
 
 # ================= JSON =================
 
@@ -93,26 +94,30 @@ if st.session_state.user is None:
     st.stop()
 
 
-# ================= HEADER =================
+# ================= TOP BAR =================
 
-st.title("📚 Lern-App")
+col_top1, col_top2, col_top3 = st.columns([2,2,1])
 
-col1, col2, col3 = st.columns(3)
+with col_top1:
+    st.title("📚 Lern-App")
 
-with col1:
+with col_top2:
     st.metric("⭐ Sterne", st.session_state.sterne)
 
-with col2:
-    klasse = st.slider("🎓 Klassenstufe", 1, 10, st.session_state.klasse)
-    st.session_state.klasse = klasse
-
-with col3:
+with col_top3:
     if st.button("Logout"):
         st.session_state.user = None
         st.rerun()
 
 
-# ================= AUFGABEN =================
+# ================= KLASSENSTUFE =================
+
+st.session_state.klasse = st.slider("🎓 Klassenstufe", 1, 10, st.session_state.klasse)
+
+
+# ================= AUFGABENGENERATOREN =================
+
+# MATHE
 
 def mathe_aufgaben(thema, klasse, anzahl):
 
@@ -140,6 +145,64 @@ def mathe_aufgaben(thema, klasse, anzahl):
     return tasks
 
 
+# DEUTSCH
+
+def deutsch_aufgaben(thema, klasse, anzahl):
+
+    daten = {
+        "Artikel": {
+            "___ Hund": "der",
+            "___ Katze": "die",
+            "___ Auto": "das",
+            "___ Blume": "die",
+        },
+        "Wortarten": {
+            "laufen": "Verb",
+            "Haus": "Nomen",
+            "schnell": "Adjektiv",
+        },
+        "Grammatik": {
+            "Ich ___ zur Schule": "gehe",
+            "Wir ___ Fußball": "spielen",
+        },
+        "Zeitformen": {
+            "ich gehe (Vergangenheit)": "ging",
+            "ich esse (Vergangenheit)": "aß",
+        },
+    }
+
+    pool = list(daten[thema].items())
+    random.shuffle(pool)
+
+    return pool[:anzahl]
+
+
+# ENGLISCH
+
+def englisch_aufgaben(thema, klasse, anzahl):
+
+    daten = {
+        "Vocabulary": {
+            "Hund": "dog",
+            "Katze": "cat",
+            "Haus": "house",
+        },
+        "Grammar": {
+            "I ___ a book": "read",
+            "She ___ fast": "runs",
+        },
+        "Tenses": {
+            "go (past)": "went",
+            "see (past)": "saw",
+        },
+    }
+
+    pool = list(daten[thema].items())
+    random.shuffle(pool)
+
+    return pool[:anzahl]
+
+
 # ================= EINSTELLUNGEN =================
 
 st.subheader("⚙️ Einstellungen")
@@ -147,13 +210,17 @@ st.subheader("⚙️ Einstellungen")
 col1, col2, col3 = st.columns(3)
 
 with col1:
-    fach = st.selectbox("Fach", ["Mathe"])
+    fach = st.selectbox("Fach", ["Mathe", "Deutsch", "Englisch"])
 
 with col2:
-    thema = st.selectbox(
-        "Thema",
-        ["Addition", "Subtraktion", "Multiplikation"],
-    )
+
+    themen = {
+        "Mathe": ["Addition", "Subtraktion", "Multiplikation"],
+        "Deutsch": ["Grammatik", "Zeitformen", "Artikel", "Wortarten"],
+        "Englisch": ["Tenses", "Grammar", "Vocabulary"],
+    }
+
+    thema = st.selectbox("Thema", themen[fach])
 
 with col3:
     anzahl = st.slider("Aufgaben", 1, 10, 5)
@@ -162,9 +229,13 @@ with col3:
 if st.button("🚀 Quiz starten"):
 
     if fach == "Mathe":
-        st.session_state.aufgaben = mathe_aufgaben(
-            thema, st.session_state.klasse, anzahl
-        )
+        st.session_state.aufgaben = mathe_aufgaben(thema, st.session_state.klasse, anzahl)
+
+    elif fach == "Deutsch":
+        st.session_state.aufgaben = deutsch_aufgaben(thema, st.session_state.klasse, anzahl)
+
+    else:
+        st.session_state.aufgaben = englisch_aufgaben(thema, st.session_state.klasse, anzahl)
 
     st.session_state.index = 0
     st.session_state.fertig = False
@@ -186,10 +257,12 @@ if st.session_state.aufgaben and not st.session_state.fertig:
 
     with col1:
         if st.button("Antwort prüfen"):
-            if antwort == loesung:
+            if antwort.lower() == loesung.lower():
                 st.success("Richtig ⭐")
                 st.session_state.sterne += 1
                 st.session_state.sterne_quiz += 1
+            else:
+                st.error(f"Falsch! Richtige Antwort: {loesung}")
 
     with col2:
         if st.button("Nächste"):
@@ -199,7 +272,7 @@ if st.session_state.aufgaben and not st.session_state.fertig:
                 st.session_state.fertig = True
 
 
-# ================= QUIZ ENDE =================
+# ================= QUIZENDE =================
 
 if st.session_state.fertig:
 
@@ -215,7 +288,7 @@ if st.session_state.fertig:
     save_json(PROGRESS_FILE, progress)
 
 
-# ================= FORTSCHRITT =================
+# ================= FORTSCHRITT (KLEIN & SCHÖN) =================
 
 st.subheader("📈 Lernfortschritt")
 
@@ -225,11 +298,10 @@ if st.session_state.user in progress:
 
     df = pd.DataFrame(list(data.items()), columns=["Datum", "Sterne"])
 
-    fig = plt.figure()
-    plt.plot(df["Datum"], df["Sterne"], marker="o")
-    plt.xticks(rotation=45)
+    col_chart, col_space = st.columns([1,2])
 
-    st.pyplot(fig)
+    with col_chart:
+        st.line_chart(df.set_index("Datum"))
 
 
 # ================= MINISPIEL =================
@@ -270,3 +342,4 @@ if st.session_state.spiel_freigeschaltet:
 
         else:
             st.info("Zu groß")
+```
