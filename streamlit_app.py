@@ -1,5 +1,3 @@
-
-```python
 import streamlit as st
 import random
 import json
@@ -13,12 +11,14 @@ st.set_page_config(page_title="Lern-App", layout="wide")
 USERS_FILE = "users.json"
 PROGRESS_FILE = "progress.json"
 
+
 # ================= JSON =================
 
 def load_json(file):
     if not os.path.exists(file):
         with open(file, "w") as f:
             json.dump({}, f)
+
     try:
         with open(file, "r") as f:
             return json.load(f)
@@ -140,23 +140,19 @@ def mathe_aufgaben(thema, klasse, anzahl):
     return tasks
 
 
-# ================= FÄCHER =================
+# ================= EINSTELLUNGEN =================
 
 st.subheader("⚙️ Einstellungen")
 
 col1, col2, col3 = st.columns(3)
 
 with col1:
-    fach = st.selectbox("Fach", ["Mathe", "Deutsch", "Englisch"])
+    fach = st.selectbox("Fach", ["Mathe"])
 
 with col2:
     thema = st.selectbox(
         "Thema",
-        {
-            "Mathe": ["Addition", "Subtraktion", "Multiplikation"],
-            "Deutsch": ["Rechtschreibung"],
-            "Englisch": ["Vokabeln"],
-        }[fach],
+        ["Addition", "Subtraktion", "Multiplikation"],
     )
 
 with col3:
@@ -203,7 +199,7 @@ if st.session_state.aufgaben and not st.session_state.fertig:
                 st.session_state.fertig = True
 
 
-# ================= ENDE =================
+# ================= QUIZ ENDE =================
 
 if st.session_state.fertig:
 
@@ -274,5 +270,3 @@ if st.session_state.spiel_freigeschaltet:
 
         else:
             st.info("Zu groß")
-```
-
