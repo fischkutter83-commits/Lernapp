@@ -157,11 +157,48 @@ def deutsch_aufgaben(thema, klasse, anzahl):
 
 def englisch_aufgaben(thema, klasse, anzahl):
     daten = {
-        "Vocabulary":{"Translate to English: Hund":"dog","Translate to English: Katze":"cat","Translate to English: Haus":"house",
-                      "Translate to English: Baum":"tree","Translate to English: Blume":"flower"},
-        "Grammar":{"Fill in: I ___ fast":"run","Fill in: She ___ fast":"runs","Fill in: They ___ happy":"are"},
-        "Tenses":{"Write past tense: go":"went","Write past tense: see":"saw","Write past tense: eat":"ate"}
+        "Vocabulary": {
+            "Translate to English: Hund": "dog",
+            "Translate to English: Katze": "cat",
+            "Translate to English: Haus": "house",
+            "Translate to English: Baum": "tree",
+            "Translate to English: Blume": "flower",
+            "Translate to English: Vogel": "bird",
+            "Translate to English: Auto": "car",
+            "Translate to English: Schule": "school"
+        },
+        "Grammar": {
+            "Fill in the blank: I ___ fast": "run",
+            "Fill in the blank: She ___ fast": "runs",
+            "Fill in the blank: They ___ happy": "are",
+            "Fill in the blank: He ___ a book": "reads",
+            "Fill in the blank: We ___ to school": "go"
+        },
+        "Tenses": {
+            "Write the past tense: go": "went",
+            "Write the past tense: see": "saw",
+            "Write the past tense: eat": "ate",
+            "Write the past tense: play": "played",
+            "Write the past tense: have": "had"
+        }
     }
+
+    # Optional: für höhere Klassen schwierigere Sätze einbauen
+    if klasse >= 5:
+        daten["Vocabulary"].update({
+            "Translate to English: Freund": "friend",
+            "Translate to English: Stadt": "city",
+            "Translate to English: Wasser": "water"
+        })
+        daten["Grammar"].update({
+            "Fill in the blank: She ___ a letter": "writes",
+            "Fill in the blank: They ___ football yesterday": "played"
+        })
+        daten["Tenses"].update({
+            "Write the past tense: write": "wrote",
+            "Write the past tense: run": "ran"
+        })
+
     pool = list(daten[thema].items())
     random.shuffle(pool)
     return pool[:anzahl]
@@ -236,3 +273,4 @@ if st.session_state.user in progress:
     col_chart, col_space = st.columns([1,2])
     with col_chart:
         st.line_chart(df.set_index("Datum"))
+
