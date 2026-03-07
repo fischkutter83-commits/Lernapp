@@ -1,6 +1,3 @@
-# Streamlit Lern-App (Gamified Version)
-
-```python
 import streamlit as st
 import random
 import json
@@ -19,22 +16,18 @@ def load_json(file):
     if not os.path.exists(file):
         with open(file, "w") as f:
             json.dump({}, f)
-
     try:
         with open(file, "r") as f:
             return json.load(f)
     except:
         return {}
 
-
 def save_json(file, data):
     with open(file, "w") as f:
         json.dump(data, f, indent=4)
 
-
 users = load_json(USERS_FILE)
 progress = load_json(PROGRESS_FILE)
-
 
 # ================= SESSION =================
 
@@ -56,7 +49,6 @@ defaults = {
 for k, v in defaults.items():
     if k not in st.session_state:
         st.session_state[k] = v
-
 
 # ================= LOGIN =================
 
@@ -99,7 +91,6 @@ if st.session_state.user is None:
 
     st.stop()
 
-
 # ================= TOP BAR =================
 
 col1, col2, col3, col4 = st.columns([3,1,1,1])
@@ -118,85 +109,59 @@ with col4:
         st.session_state.user = None
         st.rerun()
 
-
 # ================= LEVEL SYSTEM =================
 
 def add_xp(amount):
     st.session_state.xp += amount
-
     if st.session_state.xp >= 10:
         st.session_state.level += 1
         st.session_state.xp = 0
         st.success("🎉 Level Up!")
 
-
 # ================= KLASSENSTUFE =================
 
 st.session_state.klasse = st.slider("🎓 Klassenstufe", 1, 10, st.session_state.klasse)
 
-
 # ================= AUFGABEN =================
 
-# MATHE
-
 def mathe_aufgaben(thema, klasse, anzahl):
-
     max_zahl = 20 if klasse <= 3 else 100 if klasse <= 6 else 500
-
     tasks = []
-
     for _ in range(anzahl):
-
         if thema == "Addition":
             a = random.randint(1, max_zahl)
             b = random.randint(1, max_zahl)
             tasks.append((f"{a} + {b}", str(a + b)))
-
         if thema == "Subtraktion":
             a = random.randint(1, max_zahl)
             b = random.randint(1, max_zahl)
             tasks.append((f"{a} - {b}", str(a - b)))
-
         if thema == "Multiplikation":
             a = random.randint(2, 12)
             b = random.randint(2, 12)
             tasks.append((f"{a} × {b}", str(a * b)))
-
     return tasks
 
-
-# DEUTSCH
-
 def deutsch_aufgaben(thema, klasse, anzahl):
-
     daten = {
         "Artikel": {"___ Hund":"der","___ Katze":"die","___ Auto":"das"},
         "Wortarten": {"laufen":"Verb","Haus":"Nomen","schnell":"Adjektiv"},
         "Grammatik": {"Ich ___ zur Schule":"gehe","Wir ___ Fußball":"spielen"},
         "Zeitformen": {"ich gehe (Vergangenheit)":"ging","ich esse (Vergangenheit)":"aß"}
     }
-
     pool = list(daten[thema].items())
     random.shuffle(pool)
-
     return pool[:anzahl]
 
-
-# ENGLISCH
-
 def englisch_aufgaben(thema, klasse, anzahl):
-
     daten = {
         "Vocabulary":{"Hund":"dog","Katze":"cat","Haus":"house"},
         "Grammar":{"I ___ fast":"run","She ___ fast":"runs"},
         "Tenses":{"go (past)":"went","see (past)":"saw"}
     }
-
     pool = list(daten[thema].items())
     random.shuffle(pool)
-
     return pool[:anzahl]
-
 
 # ================= EINSTELLUNGEN =================
 
@@ -208,34 +173,27 @@ with col1:
     fach = st.selectbox("Fach", ["Mathe", "Deutsch", "Englisch"])
 
 with col2:
-
     themen = {
         "Mathe": ["Addition", "Subtraktion", "Multiplikation"],
         "Deutsch": ["Grammatik", "Zeitformen", "Artikel", "Wortarten"],
         "Englisch": ["Tenses", "Grammar", "Vocabulary"],
     }
-
     thema = st.selectbox("Thema", themen[fach])
 
 with col3:
     anzahl = st.slider("Aufgaben", 1, 10, 5)
 
-
 if st.button("🚀 Quiz starten"):
-
     if fach == "Mathe":
         st.session_state.aufgaben = mathe_aufgaben(thema, st.session_state.klasse, anzahl)
-
     elif fach == "Deutsch":
         st.session_state.aufgaben = deutsch_aufgaben(thema, st.session_state.klasse, anzahl)
-
     else:
         st.session_state.aufgaben = englisch_aufgaben(thema, st.session_state.klasse, anzahl)
 
     st.session_state.index = 0
     st.session_state.fertig = False
     st.session_state.sterne_quiz = 0
-
 
 # ================= QUIZ =================
 
@@ -263,10 +221,8 @@ if st.session_state.aufgaben and not st.session_state.fertig:
     with col2:
         if st.button("Nächste"):
             st.session_state.index += 1
-
             if st.session_state.index >= len(st.session_state.aufgaben):
                 st.session_state.fertig = True
-
 
 # ================= QUIZENDE =================
 
@@ -283,7 +239,6 @@ if st.session_state.fertig:
 
     save_json(PROGRESS_FILE, progress)
 
-
 # ================= FORTSCHRITT =================
 
 st.subheader("📈 Lernfortschritt")
@@ -298,7 +253,6 @@ if st.session_state.user in progress:
 
     with col_chart:
         st.line_chart(df.set_index("Datum"))
-
 
 # ================= SPIELE SHOP =================
 
@@ -330,7 +284,6 @@ with col3:
                 st.session_state.sterne -= 20
                 st.session_state.spiel3 = True
 
-
 # ================= SPIEL 1 =================
 
 if st.session_state.spiel1:
@@ -355,7 +308,6 @@ if st.session_state.spiel1:
         else:
             st.info("Zu groß")
 
-
 # ================= SPIEL 2 =================
 
 if st.session_state.spiel2:
@@ -372,7 +324,6 @@ if st.session_state.spiel2:
             st.success("Jackpot +3⭐")
             st.session_state.sterne += 3
 
-
 # ================= SPIEL 3 =================
 
 if st.session_state.spiel3:
@@ -388,4 +339,3 @@ if st.session_state.spiel3:
         if guess == number:
             st.success("Schnell! +4⭐")
             st.session_state.sterne += 4
-```
